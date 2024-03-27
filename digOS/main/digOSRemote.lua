@@ -1,12 +1,12 @@
--- digOSRemote V0.1.0
+-- digOSRemote V1.0.0
 -- Created by: ChefMooon
 
 --PROGRAM TODO--
--- Implement clipboard
+-- 
 -- 
 
 local programName = "digOSRemote"
-local programVersion = "0.1.0"
+local programVersion = "1.0.0"
 
 local broadcastFilter = "digOS"
 
@@ -35,6 +35,8 @@ local connectedTurtles = {}
 local saved1, saved2, saved3, saved4, saved5
 local savedSelection = 0
 
+local clipboard = ""
+
 -- Move Options
 local moveCommand = ""
 local moveAmount = 1
@@ -47,9 +49,6 @@ local modem = peripheral.find("modem", rednet.open)
 local rednetID
 local remoteID = 0
 local rednetStatus
-
--- Clipboard
-local clipboard = ""
 
 -- Settings Definition
 local settingRednetID = programName ..".rednetID"
@@ -103,6 +102,13 @@ settings.define(settingSaved5, {
     default = settingSaved5Default
 })
 
+local settingClipboard = programName ..".clipboard"
+local settingClipboardDefault = ""
+settings.define(settingClipboard, {
+    description = programName .. " - Clipboard",
+    default = settingClipboardDefault
+})
+
 -- Settings Functions
 local function setSetting(_name, _value)
     settings.set(_name, _value)
@@ -119,6 +125,7 @@ saved2 = getSetting(settingSaved2)
 saved3 = getSetting(settingSaved3)
 saved4 = getSetting(settingSaved4)
 saved5 = getSetting(settingSaved5)
+clipboard = getSetting(settingClipboard)
 rednetID = getSetting(settingRednetID)
 rednetStatus = getSetting(settingRednetStatus)
 if rednetStatus == 1 then
@@ -258,6 +265,7 @@ local menubarRednetStatusButton = menubarInfoFrame:addButton():setText(""):setPo
 local programLabel = menubarInfoFrame:addLabel():setText(broadcastFilter):setPosition(3, 1):setForeground(colors.yellow)
 
 --local rednetThread = sub[1]:addThread()
+local updateThread = sub[1]:addThread()
 
 ---------- **** FRONTEND START **** ----------
 ----- HOME MENU START (frontend) -----
@@ -846,12 +854,54 @@ end)
 
 --- INPUT FRAME END ---
 
+local function clipboardCopy(_info)
+    clipboard = _info
+    setSetting(settingClipboard, _info)
+    addLog(log, "Clipboard: Info Saved")
+end
+
+local function clipboardPaste(_id)
+    rednet.send(_id, clipboard, "digOS_clipboard_paste_info")
+    addLog(log, "Clipboard: Info Requested")
+end
+
+local function runUpdateThread()
+    while true do
+        local id, update = rednet.receive("digOS_update"..rednetID)
+        if update[1] == "update" then
+            addLog(log, update[2])
+        elseif update[1] == "clipboard" then
+            if update[2] == "copy" then
+                clipboardCopy(update[3])
+            elseif update[2] == "paste" then
+                clipboardPaste(id)
+            else
+                addLog(log, "Clipboard: Error")
+            end
+        else
+            addLog(log, "Invalid Update Received.")
+        end
+
+    end
+end
+
+local function startUpdateThread()
+    updateThread:start(runUpdateThread)
+    addLog(log, "Update Thread Started.")
+end
+
+local function stopUpdateThread()
+    updateThread:stop()
+    addLog(log, "Update Thread Stopped.")
+end
+
 local function stopRednet()
     if rednetOpen then
         rednetOpen = false
         setRednetStatus(rednetOpen)
         rednet.close()
         --rednetThread:stop()
+        stopUpdateThread()
         addLog(log, "Rednet Closed")
     end
 end
@@ -867,6 +917,7 @@ local function startRednet()
         setSetting(settingRednetID, homeNetworkID:getValue())
         addLog(log, "Rednet Opened. ID: "..rednetID)
         --rednetThread:start()
+        startUpdateThread()
     end
 end
 
@@ -874,6 +925,7 @@ local function startupRednet()
     modem = peripheral.find("modem", rednet.open)
     addLog(log, "Rednet Opened. ID: "..rednetID)
     --rednetThread:start()
+    startUpdateThread()
 end
 
 local function toggleRednet()

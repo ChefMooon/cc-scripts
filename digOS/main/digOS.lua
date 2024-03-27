@@ -1,17 +1,15 @@
--- digOS V0.1.0
+-- digOS V2.0.0
 -- Created by: ChefMooon
 
 --PROGRAM TODO--
 -- Add nil checks handle errors
 -- Bug Fix Bug Fix
 -- Redo programs download
--- Implement Clipboard
--- Local Variable Limit Reached, Do something about that. (Rewrite Everyting?)
--- Maybe create modules so that digOSRemote can use them aswell
+-- Send updates back to remote
 
 -- this will help filter broadcast messages
 local programName = "digOS"
-local programVersion = "0.1.0"
+--local programVersion = "2.0.0"
 
 local filePath = "basalt.lua"
 if not (fs.exists(filePath)) then
@@ -29,10 +27,11 @@ end
 -- Variables
 local  yPos, layersMined, blocksMined, turtleFuel = 0, 0, 0, 0
 local turtleFuelSlot = 1
-local turtleOptimalFuel = 50
+--local turtleOptimalFuel = 50
 local turtleID = os.getComputerID()
 local turtleLabel = os.getComputerLabel()
 local turtleStatus = ""
+local working, moving = false, false
 
 -- Dig Options
 local selectedProgram = ""
@@ -62,54 +61,47 @@ local rednetStatus
 
 -- Settings Definition
 local settingRednetID = programName ..".rednetID"
-local settingRednetIDDefault = 0
 settings.define(settingRednetID, {
     description = programName .. " - Rednet ID",
-    default = settingRednetIDDefault,
+    default = 0,
     type = number
 })
 
 local settingRednetStatus = programName ..".rednetStatus"
-local settingRednetStatusDefault = 0 -- 0 off - 1 on
-settings.define(settingRednetStatus, {
+settings.define(settingRednetStatus, { -- 0 off - 1 on
     description = programName .. " - Rednet Status",
-    default = settingRednetStatusDefault,
+    default = 0,
     type = number
 })
 
 local settingSaved1 = programName ..".saved1"
-local settingSaved1Default = ""
 settings.define(settingSaved1, {
     description = programName .. " - Saved 1",
-    default = settingSaved1Default
+    default = ""
 })
 
 local settingSaved2 = programName ..".saved2"
-local settingSaved2Default = ""
 settings.define(settingSaved2, {
     description = programName .. " - Saved 2",
-    default = settingSaved2Default
+    default = ""
 })
 
 local settingSaved3 = programName ..".saved3"
-local settingSaved3Default = ""
 settings.define(settingSaved3, {
     description = programName .. " - Saved 3",
-    default = settingSaved3Default
+    default = ""
 })
 
 local settingSaved4 = programName ..".saved4"
-local settingSaved4Default = ""
 settings.define(settingSaved4, {
     description = programName .. " - Saved 4",
-    default = settingSaved4Default
+    default = ""
 })
 
 local settingSaved5 = programName ..".saved5"
-local settingSaved5Default = ""
 settings.define(settingSaved5, {
     description = programName .. " - Saved 5",
-    default = settingSaved5Default
+    default = ""
 })
 
 -- Settings Functions
@@ -180,15 +172,14 @@ local function getTurtleIDLabel()
 end
 
 local function getRednetID()
-    --TODO: check for saved if not create a new one
-    if rednetID == settingRednetIDDefault then
+    if rednetID == 0 then
         local id = math.random(1, 99)
         rednetID = id
         setSetting(settingRednetID, id)
         return rednetID
     else
         rednetID = getSetting(settingRednetID)
-        return rednetID--rednetID
+        return rednetID
     end
 end
 
@@ -359,6 +350,11 @@ local loadSavedButton = savedFrame:addButton():setText("LOAD"):setPosition(2,3):
 local saveSavedButton = savedFrame:addButton():setText("SAVE"):setPosition(7,3):setSize(4,1)
 local resetSavedButton = savedFrame:addButton():setText("RESET"):setPosition(4,4):setSize(5,1)
 
+local clipboardFrame = sub[1]:addFrame():setPosition(15,7):setSize(7,2)
+
+local copyButton = clipboardFrame:addButton():setText("COPY"):setSize(5,1):setPosition(1, 1)
+local pasteButton = clipboardFrame:addButton():setText("PASTE"):setSize(5,1):setPosition(1, 2)
+
 local buttonFrame = sub[1]:addFrame():setPosition(2,7):setSize(12,1)
 
 local runButton = buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1)
@@ -396,7 +392,6 @@ local turnRightButton = moveInputFrame:addButton():setText("Right"):setPosition(
 ----- MOVE MENU END (frontend) -----
 
 ----- SETTINGS MENU START (frontend) -----
-
 
 local settingsFrame = sub[3]:addFrame():setPosition(1,2):setSize("{parent.w}", "{parent.h}")
 
@@ -464,8 +459,7 @@ end
 
 fuelButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        local newLog = refuelButton()
-        addLog(log, newLog)
+        addLog(log, refuelButton())
         updateFuelLabel(turtle.getFuelLevel())
     end
 end)
@@ -635,15 +629,24 @@ local function updateArgsUI(_program, _length, _width, _height, _offsetDir, _tor
     lengthInput:setValue(_length)
     widthInput:setValue(_width)
     heightInput:setValue(_height)
+
+    if offsetDir == "l" then
+        offsetLeftButton:setForeground(colors.black)
+        offsetRightButton:setForeground(colors.lightGray)
+    else
+        offsetLeftButton:setForeground(colors.lightGray)
+        offsetRightButton:setForeground(colors.black)
+    end
+
     torchCheckbox:setValue(torch)
     chestCheckbox:setValue(chest)
     rtsCheckbox:setValue(rts)
 end
 
 local function saveArgsUI(_saveSlot)
-    saveArgs = { "digOS-" .. selectedProgram .. ".lua", tostring(length), tostring(width), tostring(height),
+    local saveArgs = { "digOS-" .. selectedProgram .. ".lua", tostring(length), tostring(width), tostring(height),
     tostring(offsetDir), tostring(torch), tostring(chest), tostring(rts) }
-    savedArgsString = table.concat(saveArgs, " ")
+    local savedArgsString = table.concat(saveArgs, " ")
 
     setSetting(_saveSlot, savedArgsString)
     addLog(log, "Preset Saved.")
@@ -673,7 +676,7 @@ local function loadSelectedSaved()
         elseif savedSelection == 5 then
             saved = getSetting(settingSaved5)
         end
-    
+
         if saved ~= nil and saved ~= "" then
             local savedArgs = splitString(saved)
             updateArgsUI(savedArgs[1], savedArgs[2], savedArgs[3], savedArgs[4], savedArgs[5], savedArgs[6], savedArgs[7], savedArgs[8])
@@ -832,6 +835,8 @@ local function digOSDown(_count, _dig)
 end
 
 local function runDigOSMove()
+    addLog(log, "Move Thread Started.")
+    moving = true
     if moveCommand == "forward" then
         digOSForward(moveAmount, moveDig)
     elseif moveCommand == "up" then
@@ -855,13 +860,25 @@ local function runDigOSMove()
     end
     moveCommand = ""
     moveThread:stop()
+    moving = false
+    addLog(log, "Move Thread Stopped.")
+end
+
+local function sendJobUpdateToRemote(_message)
+    if rednetOpen then
+        updateMessage = { "update", _message }
+        rednet.send(remoteID, updateMessage, "digOS_update"..rednetID)
+    end
 end
 
 local function startMoveThread()
-    if moveThread:getStatus() == nil or moveThread:getStatus() == "dead" then
+    if working == false and moving == false then
         moveThread:start(runDigOSMove)
+        sendJobUpdateToRemote("Move Started.")
         return true
     else
+        sendJobUpdateToRemote("Turtle Busy.")
+        addLog(log, "Turtle Busy.")
         return false
     end
 end
@@ -896,21 +913,20 @@ end
 
 local function listenForInputs()
     while true do
-        local event, update = os.pullEvent("digOS_job_input")
+        local inputEvent, update = os.pullEvent("digOS_job_input")
         -- output to log that operating program requires input
         if type(update) == "string" then
-            newLog = update
+            addLog(log, update)
         else
-            newLog = "WARN: Invalid Input"
+            addLog(log, "WARN: Invalid Input")
         end
-        addLog(log, newLog)
         while true do
-            local event, keyNum, is_held = os.pullEvent("key")
+            local keyEvent, keyNum, is_held = os.pullEvent("key")
             local key = keys.getName(keyNum)
             if key ~= "leftShift" then
                 os.queueEvent("digOS_job_input_result", key)
-    
-                local valid, isValid = os.pullEvent("digOS_job_input_valid")
+
+                local validEvent, isValid = os.pullEvent("digOS_job_input_valid")
                 if isValid then
                     break
                 else
@@ -923,9 +939,23 @@ end
 
 local function runDigProgram()
     addLog(log, "Dig Thread Started.")
+    working = true
     parallel.waitForAny(startProgram, listenForUpdates, listenForInputs)
     digThread:stop()
+    working = false
     addLog(log, "Dig Thread Stopped")
+end
+
+local function tryRunDig()
+    if working == false and moving == false then -- maybe make a method to check for all threads/jobs
+        digThread:start(runDigProgram)
+        sendJobUpdateToRemote("Dig Started.")
+        return true
+    else
+        addLog(log, "Turtle Busy.")
+        sendJobUpdateToRemote("Turtle Busy.")
+        return false
+    end
 end
 
 local function receiveCommands()
@@ -947,17 +977,16 @@ local function receiveCommands()
                 torch = message[7]
                 chest = message[8]
                 rts = message[9]
-                digThread:start(runDigProgram)
+                tryRunDig()
             elseif message[1] == "move" then
                 addLog(log, "Remote Move command recieved.")
                 moveAmount = tonumber(message[2]) --reset back to ui number?
                 moveCommand = message[3]
                 moveDig = message[4]
                 startMoveThread()
-                --moveAmount = moveAmountInput:getValue()
+                moveAmount = moveAmountInput:getValue()
             end
         end
-        local testMessage = {"mid-out", "run", "3", "1", "1", "r", "false", "false", "true"}
 
         if message ~= nil and message[1] == "terminate" then
             addLog(log, "broke")
@@ -1035,19 +1064,58 @@ menubarRednetStatusButton:onClick(function(self, event, button, x, y)
     end
 end)
 
+-- TODO: Create ClipboardThread so the program does not hang while waiting
+local function clipboard(_function)
+    if rednetOpen then
+        if _function == "copy" then
+            local copyArgs = { "digOS-" .. selectedProgram .. ".lua", tostring(length), tostring(width), tostring(height),
+                tostring(offsetDir), tostring(torch), tostring(chest), tostring(rts) }
+            local copyMessage = { "clipboard", "copy", table.concat(copyArgs, " ")}
+            rednet.broadcast(copyMessage, "digOS_update"..rednetID)
+            addLog(log, "Clipboard: Copy")
+        elseif _function == "paste" then
+            local pasteMessage = { "clipboard", "paste" }
+            rednet.broadcast(pasteMessage, "digOS_update"..rednetID)
+            -- get response and set ui
+            local id, info = rednet.receive("digOS_clipboard_paste_info", 3)
+            -- info format: _program, _length, _width, _height, _offsetDir, _torch, _chest, _rts
+            if info then
+                if info ~= "" then 
+                    pasteInfo = splitString(info)
+                    updateArgsUI(pasteInfo[1], pasteInfo[2], pasteInfo[3], pasteInfo[4], pasteInfo[5], pasteInfo[6], pasteInfo[7], pasteInfo[8])
+                    addLog(log, "Clipboard: Paste Success")
+                else
+                    addLog(log, "Clipboard: No Save Data")
+                end
+            else
+                addLog(log, "Clipboard: Paste Failure")
+            end
+        else
+            addLog("Clipboard Error")
+        end
+    else
+        addLog(log, "Clipboard requires Rednet.")
+    end
+end
+
+copyButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        clipboard("copy")
+    end
+end)
+
+pasteButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        clipboard("paste")
+    end
+end)
+
 local function runDig()
     selectedProgram = programDropdown:getItem(programDropdown:getItemIndex()).text
     length = tonumber(lengthInput:getValue()) or 0
     width = tonumber(widthInput:getValue()) or 0
     height = tonumber(heightInput:getValue()) or 0
-
-
-    if digThread:getStatus() == nil or digThread:getStatus() == "dead" or digThread:getStatus() == "suspended" then
-        digThread:start(runDigProgram)
-    else
-        addLog(log, "Dig Thread Busy.")
-    end
-
+    tryRunDig()
     updateFuelLabel(turtle.getFuelLevel())
 end
 
@@ -1063,11 +1131,15 @@ local function resetInput()
     widthInput:setValue("1")
     heightInput:setValue("1")
 
+    offsetDir = "r"
+    offsetLeftButton:setForeground(colors.lightGray)
+    offsetRightButton:setForeground(colors.black)
+
     torchCheckbox:setValue(false)
     chestCheckbox:setValue(false)
     rtsCheckbox:setValue(false)
 
-    if digThread:getStatus() ~= nil or digThread:getStatus() ~= "dead" then
+    if working == true then
         digThread:stop()
         addLog(log, "Dig Thread Reset.")
     end
@@ -1084,8 +1156,7 @@ end)
 ----- MOVE MENU START -----
 
 local function digCheckboxChange(self)
-    local checked = self:getValue()
-    if checked then
+    if self:getValue() then
         moveDig = false
     else
         moveDig = true
@@ -1104,43 +1175,33 @@ moveAmountResetButton:onClick(function(self, event, button, x, y)
 end)
 
 local function setMoveAmount(_value)
-    moveAmount = _value
-    moveAmountInput:setValue(_value)
+    if _value <= 1000 and _value >= 1 then
+        moveAmount = _value
+        moveAmountInput:setValue(_value)
+    end
 end
 
 moveAmountAdd5Button:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        local newValue = moveAmount + 5
-        if newValue <= 1000 then
-            setMoveAmount(newValue)
-        end
+        setMoveAmount(moveAmount + 5)
     end
 end)
 
 moveAmountAdd1Button:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        local newValue = moveAmount + 1
-        if newValue <= 1000 then
-            setMoveAmount(newValue)
-        end
+        setMoveAmount(moveAmount + 1)
     end
 end)
 
 moveAmountSub1Button:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        local newValue = moveAmount - 1
-        if newValue >= 1 then
-            setMoveAmount(newValue)
-        end
+        setMoveAmount(moveAmount - 1)
     end
 end)
 
 moveAmountSub5Button:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        local newValue = moveAmount - 5
-        if newValue >= 1 then
-            setMoveAmount(newValue)
-        end
+        setMoveAmount(moveAmount - 5)
     end
 end)
 
@@ -1210,8 +1271,7 @@ end)
 ----- SETTINGS MENU START (backend) -----
 
 local function chestCheckboxChange(self)
-    local checked = self:getValue()
-    if checked then
+    if self:getValue() then
         chest = false
     else
         chest = true
@@ -1220,8 +1280,7 @@ end
 chestCheckbox:onChange(chestCheckboxChange)
 
 local function torchCheckboxChange(self)
-    local checked = self:getValue()
-    if checked then
+    if self:getValue() then
         torch = false
     else
         torch = true
@@ -1230,8 +1289,7 @@ end
 torchCheckbox:onChange(torchCheckboxChange)
 
 local function rtsCheckboxChange(self)
-    local checked = self:getValue()
-    if checked then
+    if self:getValue() then
         rts = false
     else
         rts = true
