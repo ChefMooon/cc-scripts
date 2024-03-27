@@ -9,6 +9,7 @@ local programName = "digOSUpdate.lua"
 local programVersion = "1.0.0"
 
 local searchPattern = "digOS.*"
+local programSearchPattern = "digOSUpdate.*"
 
 local digOSPrograms = {
     {filename = "digOS.lua", url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/main/digOS/main/digOS.lua" },
@@ -75,7 +76,7 @@ local function digOSUpdate()
     -- Iterate through the list of programs
     for _, program in ipairs(programs) do
         if string.find(program, searchPattern) then
-            if program ~= programName then
+            if not string.find(program, programSearchPattern) then
                 -- Delete programs containing "digOS"
                 table.insert(matchingPrograms, program)
                 print("Found: ", program)
