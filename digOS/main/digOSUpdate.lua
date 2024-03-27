@@ -11,9 +11,9 @@ local programVersion = "1.0.0"
 local searchPattern = "digOS.*"
 
 local digOSPrograms = {
-    {filename = "digOS.lua", url = "" },
-    {filename = "digOS-mid-out.lua", url = "" },
-    {filename = "digOSRemote.lua", url = "" }
+    {filename = "digOS.lua", url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/main/digOS/main/digOS.lua" },
+    {filename = "digOS-mid-out.lua", url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/main/digOS/digPrograms/digOS-mid-out.lua" },
+    {filename = "digOSRemote.lua", url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/main/digOS/main/digOSRemote.lua" }
 }
 
 -- Function to list all files in a directory
