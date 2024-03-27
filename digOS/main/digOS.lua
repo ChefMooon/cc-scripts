@@ -13,7 +13,7 @@ local programName = "digOS"
 
 local filePath = "basalt.lua"
 if not (fs.exists(filePath)) then
-    shell.run("wget run https://basalt.madefor.cc/install.lua release latest.lua " .. filePath)
+    shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. filePath)
 end
 local basalt = require(filePath:gsub(".lua", ""))
 
