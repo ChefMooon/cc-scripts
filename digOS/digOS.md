@@ -13,6 +13,5 @@ digOS is a suite of programs that make digging with turtles easier.
 **Dig Programs**
 - digOS-mid-out
 
-
-TODO:
+**TODO:**
 - Rip apart and put back together
