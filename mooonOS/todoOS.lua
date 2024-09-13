@@ -12,7 +12,6 @@
 ---     Arrow keys up/down change selected
 
 ----- REQUIRE START -----
----
 
 if not (fs.exists(requiredPrograms.mooonUtil.filename)) then
     shell.run("wget " .. requiredPrograms.mooonUtil.url .. requiredPrograms.mooonUtil.filename)
@@ -32,7 +31,7 @@ local requiredPrograms = {
         filename = "mooonOS/todoOS/todoOSView.lua",
         url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSView.lua"
     },
-    todoOSFile = {
+    todoOSUtil = {
         filename = "mooonOS/todoOS/todoOSUtil.lua",
         url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSUtil.lua"
     }
@@ -52,10 +51,9 @@ end
 
 local basalt = require(requiredPrograms.basalt.filename:gsub(".lua", ""))
 local view = require(requiredPrograms.todoOSView:gsub(".lua", ""))
-local file = require(requiredPrograms.todoOSFile:gsub(".lua", ""))
+local file = require(requiredPrograms.todoOSUtil:gsub(".lua", ""))
 
 ----- REQUIRE END -----
-
 
 ----- VARIABLES START -----
 
@@ -63,13 +61,7 @@ local rednetOpen = false
 
 local savedDataPath = "mooonOS/todoOS/todoOSData.txt"
 
-
 ----- VARIABLES END -----
----
-
-
-
-
 
 local theme = {
     background = colors.gray,
@@ -77,7 +69,6 @@ local theme = {
     rednetOn = colors.red,
     rednetOff = colors.black
 }
-
 
 ----- MENUBAR START -----
 
@@ -108,18 +99,20 @@ local menubar = main:addMenubar():setScrollable()
     :addItem("Settings")
     :addItem("Info")
 
+
+----- MENUBAR END -----
+
 view.initMenubarInfoFrame(main, theme)
 view.initTodoFrame(sub[1], theme)
 view.initInputFrame(sub[1], theme)
 
-
 local buttonAdd, buttonDelete, buttonMoveUp, buttonMoveDown = view.getInputButtons()
 local todoList = view.getTodoList()
-
 
 local savedData = file.init(savedDataPath)
 view.setTodoList(savedData)
 
+----- FUNCTION START -----
 
 local function createTodo(todo)
     if todo ~= "" then
@@ -144,13 +137,6 @@ local function moveTodo(index, newIndex)
     view.setSelectedTodo(newIndex)
     file.quicksave(savedData)
 end
-
------ MENUBAR END -----
-
------ FUNCTION START -----
-
-
-
 
 ----- FUNCTION END -----
 
