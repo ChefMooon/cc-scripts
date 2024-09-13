@@ -12,37 +12,47 @@
 ---     Arrow keys up/down change selected
 
 ----- REQUIRE START -----
+---
 
---- Make me a loop, waiting on upload to get downloadPath
+if not (fs.exists(requiredPrograms.mooonUtil.filename)) then
+    shell.run("wget " .. requiredPrograms.mooonUtil.url .. requiredPrograms.mooonUtil.filename)
+end
+local mooonUtil = require(requiredPrograms.mooonUtil.filename:gsub(".lua", ""))
+
 local requiredPrograms = {
+    mooonUtil = {
+        filename = "mooonOS/common/mooonUtil.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
+    },
     basalt = {
         filename = "basalt.lua",
-        downloadPath = "wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua "
+        url = "wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua "
     },
     todoOSView = {
-        filename = "todoOSView.lua",
-        downloadPath = ""
+        filename = "mooonOS/todoOS/todoOSView.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSView.lua"
     },
     todoOSFile = {
-        filename = "todoOSFile.lua",
-        downloadPath = ""
+        filename = "mooonOS/todoOS/todoOSUtil.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSUtil.lua"
     }
 }
 
-local basaltPath = "basalt.lua"
-if not (fs.exists(basaltPath)) then
+if not (fs.exists(requiredPrograms.basalt.filename)) then
     print("Basalt Not Found. Installing ...")
-    shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. basaltPath)
+    shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. requiredPrograms.basalt.filename)
 end
-local basalt = require(basaltPath:gsub(".lua", ""))
 
-local programPath = "mooonOS/todoOS/"
+for _, program in ipairs(requiredPrograms) do
+    if not (fs.exists(program.filename)) then
+        print(program.filename:gsub(".lua", "") .. " Not Found. Installing ...")
+        mooonUtil.downloadFile(program.url, program.filename)
+    end
+end
 
-local todoOSViewPath = programPath .. "todoOSView.lua"
-local view = require(todoOSViewPath:gsub(".lua", ""))
-
-local todoOSFilePath = programPath .. "todoOSUtil.lua"
-local file = require(todoOSFilePath:gsub(".lua", ""))
+local basalt = require(requiredPrograms.basalt.filename:gsub(".lua", ""))
+local view = require(requiredPrograms.todoOSView:gsub(".lua", ""))
+local file = require(requiredPrograms.todoOSFile:gsub(".lua", ""))
 
 ----- REQUIRE END -----
 
@@ -51,7 +61,7 @@ local file = require(todoOSFilePath:gsub(".lua", ""))
 
 local rednetOpen = false
 
-local savedDataFilename = programPath .. "todoOSData.txt"
+local savedDataPath = "mooonOS/todoOS/todoOSData.txt"
 
 
 ----- VARIABLES END -----
@@ -107,7 +117,7 @@ local buttonAdd, buttonDelete, buttonMoveUp, buttonMoveDown = view.getInputButto
 local todoList = view.getTodoList()
 
 
-local savedData = file.init(savedDataFilename)
+local savedData = file.init(savedDataPath)
 view.setTodoList(savedData)
 
 

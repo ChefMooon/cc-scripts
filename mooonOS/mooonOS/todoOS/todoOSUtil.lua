@@ -22,9 +22,9 @@ end
 
 --- div ---
 
-function fileUtil.loadFileToTable(filename)
+function fileUtil.loadFileToTable(path)
     local data = {}
-    local file = io.open(filename, "r")
+    local file = io.open(path, "r")
 
     if file then
         local index = 1
@@ -38,14 +38,14 @@ function fileUtil.loadFileToTable(filename)
         end
         file:close()
     else
-        print("Could not open file " .. filename)
+        print("Could not open file " .. path)
     end
 
     return data
 end
 
-function fileUtil.saveTableToFile(filename, data)
-    local file = io.open(filename, "w")
+function fileUtil.saveTableToFile(path, data)
+    local file = io.open(path, "w")
 
     if file then
         for _, entry in ipairs(data) do
@@ -53,7 +53,7 @@ function fileUtil.saveTableToFile(filename, data)
         end
         file:close()
     else
-        print("Could not write to file " .. filename)
+        print("Could not write to file " .. path)
     end
 end
 
