@@ -415,9 +415,9 @@ end
 viewHome.getFuelGUI().fuelButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if button == 1 then
-            addLog(log, refuelButton("max"))
-        elseif button == 2 then
             addLog(log, refuelButton(1))
+        elseif button == 2 then
+            addLog(log, refuelButton("max"))
         end
         updateFuelLabel(turtle.getFuelLevel())
     end
