@@ -32,7 +32,7 @@ local defaultTheme = {
 local lib = {
     mooonUtil = {
         path = "mooonOS/common/mooonUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/common/mooonUtil.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
     },
     basalt = {
         path = "basalt.lua",
@@ -43,42 +43,42 @@ local lib = {
 local subPrograms = {
     digOSViewHome = {
         path = "mooonOS/digOS/digOSViewHome.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/digOS/digOSViewHome.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewHome.lua"
     },
     digOSViewControl = {
         path = "mooonOS/digOS/digOSViewControl.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/digOS/digOSViewControl.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewControl.lua"
     },
     digOSViewSettings = {
         path = "mooonOS/digOS/digOSViewSettings.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/digOS/digOSViewSettings.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewSettings.lua"
     },
     digOSViewInfo = {
         path = "mooonOS/digOS/digOSViewInfo.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/digOS/digOSViewInfo.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewInfo.lua"
     },
     digOSUtil = {
         path = "mooonOS/digOS/digOSUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/digOS/digOSUtil.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSUtil.lua"
     },
     rednetUtil = {
         path = "mooonOS/common/rednetUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/common/rednetUtil.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/rednetUtil.lua"
     },
     settingsUtil = {
         path = "mooonOS/common/settingsUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/common/settingsUtil.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/settingsUtil.lua"
     },
     digUtil = {
         path = "mooonOS/common/digUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/common/digUtil.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/digUtil.lua"
     }
 }
 
 local digPrograms = {
     digOS_mid_out = {
         path = "mooonOS/digOS/digPrograms/digOS-mid-out.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/digOS/digPrograms/digOS-mid-out.lua"
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digPrograms/digOS-mid-out.lua"
     }
 }
 
