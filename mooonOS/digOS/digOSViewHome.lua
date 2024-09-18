@@ -467,7 +467,7 @@ end
 function view.initLegendGUI(frame, parentFrame, theme)
     legendGUI.showButton = frame:addButton():setText("LGD"):setPosition("{parent.w-3}", 2):setSize(3, 1)
 
-    legendGUI.frame = parentFrame:addFrame():setPosition(1, 2):setSize("{parent.w-1}", "{parent.h-3}"):hide()
+    legendGUI.frame = parentFrame:addFrame():setPosition(1, 2):setSize("{parent.w-2}", "{parent.h-3}"):hide()
     legendGUI.hideButton = legendGUI.frame:addButton():setText("\0X"):setPosition("{parent.w-3}", 1):setSize(3, 1)
 
     legendGUI.showButton:onClick(function(self, event, button, x, y)
