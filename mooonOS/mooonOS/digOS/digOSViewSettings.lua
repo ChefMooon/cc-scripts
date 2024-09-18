@@ -29,7 +29,7 @@ function view.init(frame, turtleInfo, rednetInfo, theme)
 
     homeTurtleIDLabel = homeNetworkFrame:addLabel():setText("ID:"):setPosition(1,1):setSize(3,1)
     homeTurtleIDFrame = homeNetworkFrame:addScrollableFrame():setPosition(4,1):setSize("{parent.w-3}",1):setDirection("horizontal")
-    homeTurtleID = homeTurtleIDFrame:addLabel():setText(turtleInfo.idLabel)
+    homeTurtleID = homeTurtleIDFrame:addLabel():setText(tostring(turtleInfo.idLabel))
 
     homeNetworkLabel = homeNetworkFrame:addLabel():setText("Rednet:"):setPosition(1,2):setSize(7,1)
     homeNetworkID = homeNetworkFrame:addInput():setPosition(8,2):setSize(3,1):setInputType("number"):setValue(rednetInfo.rednetID):setInputLimit(2)
