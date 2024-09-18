@@ -11,47 +11,63 @@
 ---     Delete to delete
 ---     Arrow keys up/down change selected
 
+-- this will help filter broadcast messages
+local programName = "todoOS"
+local programVersion = "1.0.0"
+local programDescription = "This is a simple Todo list."
+
+local programInfo = {
+    programName = "todoOS",
+    programVersion = "1.0.0",
+    programDescription, "This is a simple Todo list."
+}
+
 ----- REQUIRE START -----
 
-if not (fs.exists(requiredPrograms.mooonUtil.filename)) then
-    shell.run("wget " .. requiredPrograms.mooonUtil.url .. requiredPrograms.mooonUtil.filename)
-end
-local mooonUtil = require(requiredPrograms.mooonUtil.filename:gsub(".lua", ""))
-
-local requiredPrograms = {
+local lib = {
     mooonUtil = {
-        filename = "mooonOS/common/mooonUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
+        path = "mooonOS/common/mooonUtil.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/common/mooonUtil.lua"
     },
     basalt = {
-        filename = "basalt.lua",
+        path = "basalt.lua",
         url = "wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua "
-    },
-    todoOSView = {
-        filename = "mooonOS/todoOS/todoOSView.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSView.lua"
-    },
-    todoOSUtil = {
-        filename = "mooonOS/todoOS/todoOSUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSUtil.lua"
     }
 }
 
-if not (fs.exists(requiredPrograms.basalt.filename)) then
-    print("Basalt Not Found. Installing ...")
-    shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. requiredPrograms.basalt.filename)
-end
+local subPrograms = {
+    todoOSView = {
+        path = "mooonOS/todoOS/todoOSView.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/todoOS/todoOSView.lua"
+    },
+    todoOSViewInfo = {
+        path = "mooonOS/todoOS/todoOSViewInfo.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/todoOS/todoOSViewInfo.lua"
+    },
+    todoOSUtil = {
+        path = "mooonOS/todoOS/todoOSUtil.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/todoOS/todoOSUtil.lua"
+    }
+}
 
-for _, program in ipairs(requiredPrograms) do
-    if not (fs.exists(program.filename)) then
-        print(program.filename:gsub(".lua", "") .. " Not Found. Installing ...")
-        mooonUtil.downloadFile(program.url, program.filename)
+if not (fs.exists(lib.mooonUtil.path)) then
+    shell.run("wget " .. lib.mooonUtil.url .. " " .. lib.mooonUtil.path)
+end
+local mooonUtil = require(lib.mooonUtil.path:gsub(".lua", ""))
+local basalt = mooonUtil.getBasalt(lib.basalt.path)
+
+for _, program in pairs(subPrograms) do
+    if not (fs.exists(program.path)) then
+        print(program.path:gsub(".lua", "") .. " Not Found. Installing ...")
+        mooonUtil.downloadFile(program.url, program.path)
+    else
+        print(program.path:gsub(".lua", "") .. " Found!")
     end
 end
 
-local basalt = require(requiredPrograms.basalt.filename:gsub(".lua", ""))
-local view = require(requiredPrograms.todoOSView:gsub(".lua", ""))
-local file = require(requiredPrograms.todoOSUtil:gsub(".lua", ""))
+local view = mooonUtil.getProgram(subPrograms.todoOSView.path)
+local viewInfo = mooonUtil.getProgram(subPrograms.todoOSViewInfo.path)
+local file = mooonUtil.getProgram(subPrograms.todoOSUtil.path)
 
 ----- REQUIRE END -----
 
@@ -108,6 +124,8 @@ view.initInputFrame(sub[1], theme)
 
 local buttonAdd, buttonDelete, buttonMoveUp, buttonMoveDown = view.getInputButtons()
 local todoList = view.getTodoList()
+
+viewInfo.init(sub[3], programInfo, theme)
 
 local savedData = file.init(savedDataPath)
 view.setTodoList(savedData)
