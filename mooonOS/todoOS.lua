@@ -25,38 +25,21 @@ local programInfo = {
 ----- REQUIRE START -----
 
 local lib = {
-    mooonUtil = {
-        path = "mooonOS/common/mooonUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/common/mooonUtil.lua"
-    },
-    basalt = {
-        path = "basalt.lua",
-        url = "wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua "
+    base = {
+        mooonUtil = {
+            path = "mooonOS/common/mooonUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
+        }
     }
 }
 
-local subPrograms = {
-    todoOSView = {
-        path = "mooonOS/todoOS/todoOSView.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/todoOS/todoOSView.lua"
-    },
-    todoOSViewInfo = {
-        path = "mooonOS/todoOS/todoOSViewInfo.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/todoOS/todoOSViewInfo.lua"
-    },
-    todoOSUtil = {
-        path = "mooonOS/todoOS/todoOSUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/mooonOS/todoOS/todoOSUtil.lua"
-    }
-}
-
-if not (fs.exists(lib.mooonUtil.path)) then
-    shell.run("wget " .. lib.mooonUtil.url .. " " .. lib.mooonUtil.path)
+if not (fs.exists(lib.base.mooonUtil.path)) then
+    shell.run("wget " .. li.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
 end
-local mooonUtil = require(lib.mooonUtil.path:gsub(".lua", ""))
-local basalt = mooonUtil.getBasalt(lib.basalt.path)
+local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
+local basalt = mooonUtil.getBasalt(mooonUtil.lib.base.basalt.path)
 
-for _, program in pairs(subPrograms) do
+for _, program in pairs(mooonUtil.lib.todoOS) do
     if not (fs.exists(program.path)) then
         print(program.path:gsub(".lua", "") .. " Not Found. Installing ...")
         mooonUtil.downloadFile(program.url, program.path)
@@ -65,9 +48,9 @@ for _, program in pairs(subPrograms) do
     end
 end
 
-local view = mooonUtil.getProgram(subPrograms.todoOSView.path)
-local viewInfo = mooonUtil.getProgram(subPrograms.todoOSViewInfo.path)
-local file = mooonUtil.getProgram(subPrograms.todoOSUtil.path)
+local view = mooonUtil.getProgram(mooonUtil.lib.todoOS.todoOSView.path)
+local viewInfo = mooonUtil.getProgram(mooonUtil.lib.todoOS.todoOSViewInfo.path)
+local file = mooonUtil.getProgram(mooonUtil.lib.todoOS.todoOSUtil.path)
 
 ----- REQUIRE END -----
 
@@ -150,6 +133,7 @@ local function deleteTodo(index)
 end
 
 local function moveTodo(index, newIndex)
+    -- todo only update if data is changed?
     savedData = file.moveTodo(savedData, index, newIndex)
     view.setTodoList(savedData, theme)
     view.setSelectedTodo(newIndex)

@@ -3,12 +3,17 @@
 
 --PROGRAM TODO--
 -- refactor, variables can be made into tables
+    -- log
+    -- fuel
+    -- clipboard
 -- add button to reset all saved data, create a confirm toast window (maybe make the window in another class and call it from here so that it can be used in other places)
 -- create a legend (maybe create a class to help with this)
 
 local digOSUtil = require("mooonOS/digOS/digOSUtil")
 
 local CONST = {
+    DIG_MAX = 1000,
+    DIG_MIN = 1,
     TORCH_SPACING_MIN = 1,
     TORCH_SPACING_MAX = 16,
     DEFAULT_TORCH_SPACING = 7,
@@ -40,38 +45,31 @@ local fuelLevelLabel
 
 local fuelButton
 
-local inputFrame
-
-local programDropdownLabel
-
-local programDropdown
-
-local lengthInputLabel
-local lengthInput
-local lengthSubButton
-local lengthAddButton
-
-local widthInputLabel
-local widthInput
-local widthSubButton
-local widthAddButton
-
-local heightInputLabel
-local heightInput
-local heightSubButton
-local heightAddButton
-
-local offsetLeftButton
-local offsetRightButton
-
-local torchCheckBoxLabel
-local torchCheckbox
-
-local chestCheckBoxLabel
-local chestCheckbox
-
-local rtsCheckBoxLabel
-local rtsCheckbox
+local basicDigSettingsGUI = {
+    frame,
+    programDropdownLabel,
+    programDropdown,
+    lengthInputLabel,
+    lengthInput,
+    lengthSubButton,
+    lengthAddButton,
+    widthInputLabel,
+    widthInput,
+    widthSubButton,
+    widthAddButton,
+    heightInputLabel,
+    heightInput,
+    heightSubButton,
+    heightAddButton,
+    offsetLeftButton,
+    offsetRightButton,
+    torchCheckBoxLabel,
+    torchCheckbox,
+    chestCheckBoxLabel,
+    chestCheckbox,
+    rtsCheckBoxLabel,
+    rtsCheckbox
+}
 
 local legendGUI = {
     frame,
@@ -181,9 +179,9 @@ local function onReleaseTheme(self)
 end
 
 local function getOffsetValue()
-    if offsetLeftButton:getForeground() == colors.black then
+    if basicDigSettingsGUI.offsetLeftButton:getForeground() == colors.black then
         return "l"
-    elseif offsetRightButton:getForeground() == colors.black then
+    elseif basicDigSettingsGUI.offsetRightButton:getForeground() == colors.black then
         return "r"
     end
 end
@@ -241,6 +239,111 @@ end
 
 local buttonFrame, runButton, resetButton
 
+function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
+    basicDigSettingsGUI.frame = frame:addFrame():setPosition(1, 2):setSize(22, 4)
+
+    basicDigSettingsGUI.programDropdownLabel = basicDigSettingsGUI.frame:addLabel():setText("Program:"):setPosition(1, 1)
+
+    basicDigSettingsGUI.programDropdown = basicDigSettingsGUI.frame:addDropdown():setPosition(9, 1):setSize(14,1)
+
+    basicDigSettingsGUI.lengthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("L:"):setPosition(1, 2)
+    basicDigSettingsGUI.lengthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.length)
+    basicDigSettingsGUI.lengthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+
+    basicDigSettingsGUI.widthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("W:"):setPosition(1, 3)
+    basicDigSettingsGUI.widthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.width)
+    basicDigSettingsGUI.widthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+
+    basicDigSettingsGUI.heightInputLabel = basicDigSettingsGUI.frame:addLabel():setText("H:"):setPosition(1, 4)
+    basicDigSettingsGUI.heightInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.height)
+    basicDigSettingsGUI.heightSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+
+    basicDigSettingsGUI.offsetLeftButton = basicDigSettingsGUI.frame:addButton():setText("\171"):setPosition(14,2):setSize(1,1):setForeground(colors.lightGray)
+    basicDigSettingsGUI.offsetRightButton = basicDigSettingsGUI.frame:addButton():setText("\187"):setPosition(15,2):setSize(1,1)
+
+    basicDigSettingsGUI.torchCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("Torch"):setPosition(18,2):setBackground(colors.gray):setForeground(colors.black)
+    basicDigSettingsGUI.torchCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17,2):setBackground(colors.black):setForeground(colors.lightGray)
+
+    basicDigSettingsGUI.chestCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("Chest"):setPosition(18,3):setBackground(colors.gray):setForeground(colors.black)
+    basicDigSettingsGUI.chestCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17,3):setBackground(colors.black):setForeground(colors.lightGray)
+
+    basicDigSettingsGUI.rtsCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("RTS"):setPosition(18,4):setSize(5,1):setBackground(colors.gray):setForeground(colors.black)
+    basicDigSettingsGUI.rtsCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17,4):setBackground(colors.black):setForeground(colors.lightGray)
+
+    basicDigSettingsGUI.lengthSubButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            local newValue = basicDigSettingsGUI.lengthInput:getValue() - getNumberChange(button)
+            if newValue >= CONST.DIG_MIN then
+                basicDigSettingsGUI.lengthInput:setValue(newValue)
+            end
+        end
+    end)
+    basicDigSettingsGUI.lengthAddButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            local newValue = basicDigSettingsGUI.lengthInput:getValue() + getNumberChange(button)
+            if newValue <= CONST.DIG_MAX then
+                basicDigSettingsGUI.lengthInput:setValue(newValue)
+            end
+        end
+    end)
+
+    basicDigSettingsGUI.widthSubButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            local newValue = basicDigSettingsGUI.widthInput:getValue() - getNumberChange(button)
+            if newValue >= CONST.DIG_MIN then
+                basicDigSettingsGUI.widthInput:setValue(newValue)
+            end
+        end
+    end)
+    basicDigSettingsGUI.widthAddButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            local newValue = basicDigSettingsGUI.widthInput:getValue() + getNumberChange(button)
+            if newValue <= CONST.DIG_MAX then
+                basicDigSettingsGUI.widthInput:setValue(newValue)
+            end
+        end
+    end)
+
+    basicDigSettingsGUI.heightSubButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            local newValue = basicDigSettingsGUI.heightInput:getValue() - getNumberChange(button)
+            if newValue >= CONST.DIG_MIN then
+                basicDigSettingsGUI.heightInput:setValue(newValue)
+            end
+        end
+    end)
+    basicDigSettingsGUI.heightAddButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            local newValue = basicDigSettingsGUI.heightInput:getValue() + getNumberChange(button)
+            if newValue <= CONST.DIG_MAX then
+                basicDigSettingsGUI.heightInput:setValue(newValue)
+            end
+        end
+    end)
+
+    basicDigSettingsGUI.offsetLeftButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            if self:getForeground() == colors.lightGray then
+                self:setForeground(colors.black)
+                basicDigSettingsGUI.offsetRightButton:setForeground(colors.lightGray)
+            end
+        end
+    end)
+    basicDigSettingsGUI.offsetRightButton:onClick(function(self, event, button, x, y)
+        if (event == "mouse_click") then
+            if self:getForeground() == colors.lightGray then
+                self:setForeground(colors.black)
+                basicDigSettingsGUI.offsetLeftButton:setForeground(colors.lightGray)
+            end
+        end
+    end)
+
+
+end
+
 function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.frame = frame:addFrame():setPosition(24, 2):setSize(12, 7):hide()
 
@@ -279,9 +382,9 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.torchDistanceDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchDistanceInput:getValue()) - getNumberChange(button)
-            if value > CONST.TORCH_SPACING_MIN then
+            if value >= CONST.TORCH_SPACING_MIN then
                 advancedDigSettingsGUI.torchDistanceInput:setValue(value)
-            elseif value < CONST.TORCH_SPACING_MIN then
+            elseif value <= CONST.TORCH_SPACING_MIN then
                 advancedDigSettingsGUI.torchDistanceInput:setValue(CONST.TORCH_SPACING_MIN)
             end
         end
@@ -289,9 +392,9 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.torchDistanceIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchDistanceInput:getValue()) + getNumberChange(button)
-            if value < CONST.TORCH_SPACING_MAX then
+            if value <= CONST.TORCH_SPACING_MAX then
                 advancedDigSettingsGUI.torchDistanceInput:setValue(value)
-            elseif value > CONST.TORCH_SPACING_MAX then
+            elseif value >= CONST.TORCH_SPACING_MAX then
                 advancedDigSettingsGUI.torchDistanceInput:setValue(CONST.TORCH_SPACING_MAX)
             end
         end
@@ -300,9 +403,9 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.torchSlotDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchSlotInput:getValue()) - getNumberChange(button)
-            if value > 1 then
+            if value >= 1 then
                 advancedDigSettingsGUI.torchSlotInput:setValue(value)
-            elseif value < 1 then
+            elseif value <= 1 then
                 advancedDigSettingsGUI.torchSlotInput:setValue(1)
             end
         end
@@ -310,9 +413,9 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.torchSlotIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchSlotInput:getValue()) + getNumberChange(button)
-            if value < 16 then
+            if value <= 16 then
                 advancedDigSettingsGUI.torchSlotInput:setValue(value)
-            elseif value > 16 then
+            elseif value >= 16 then
                 advancedDigSettingsGUI.torchSlotInput:setValue(16)
             end
         end
@@ -321,9 +424,9 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.chestSlotDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.chestSlotInput:getValue()) - getNumberChange(button)
-            if value > 1 then
+            if value >= 1 then
                 advancedDigSettingsGUI.chestSlotInput:setValue(value)
-            elseif value < 1 then
+            elseif value <= 1 then
                 advancedDigSettingsGUI.chestSlotInput:setValue(1)
             end
         end
@@ -331,9 +434,9 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.chestSlotIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.chestSlotInput:getValue()) + getNumberChange(button)
-            if value < 16 then
+            if value <= 16 then
                 advancedDigSettingsGUI.chestSlotInput:setValue(value)
-            elseif value > 16 then
+            elseif value >= 16 then
                 advancedDigSettingsGUI.chestSlotInput:setValue(16)
             end
         end
@@ -556,38 +659,7 @@ function view.init(frame, turtleInfo, digArgs, homeUIInfo, rednetInfo, theme)
 
     fuelButton = homeFuelFrame:addButton():setText("REFUEL"):setSize("{parent.w-1}", 1):setPosition(1, 2)
 
-    inputFrame = homeInputFrame:addFrame():setPosition(1, 2):setSize(22, 4)
-
-    programDropdownLabel = inputFrame:addLabel():setText("Program:"):setPosition(1, 1)
-
-    programDropdown = inputFrame:addDropdown():setPosition(9, 1):setSize(14,1)
-
-    lengthInputLabel = inputFrame:addLabel():setText("L:"):setPosition(1, 2)
-    lengthInput = inputFrame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.length)
-    lengthSubButton = inputFrame:addButton():setText("\17"):setPosition(9, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    lengthAddButton = inputFrame:addButton():setText(" \16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-
-    widthInputLabel = inputFrame:addLabel():setText("W:"):setPosition(1, 3)
-    widthInput = inputFrame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.width)
-    widthSubButton = inputFrame:addButton():setText("\17"):setPosition(9, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    widthAddButton = inputFrame:addButton():setText(" \16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-
-    heightInputLabel = inputFrame:addLabel():setText("H:"):setPosition(1, 4)
-    heightInput = inputFrame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.height)
-    heightSubButton = inputFrame:addButton():setText("\17"):setPosition(9, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    heightAddButton = inputFrame:addButton():setText(" \16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-
-    offsetLeftButton = inputFrame:addButton():setText("\171"):setPosition(14,2):setSize(1,1):setForeground(colors.lightGray)
-    offsetRightButton = inputFrame:addButton():setText("\187"):setPosition(15,2):setSize(1,1)
-
-    torchCheckBoxLabel = inputFrame:addLabel():setText("Torch"):setPosition(18,2):setBackground(colors.gray):setForeground(colors.black)
-    torchCheckbox = inputFrame:addCheckbox():setPosition(17,2):setBackground(colors.black):setForeground(colors.lightGray)
-
-    chestCheckBoxLabel = inputFrame:addLabel():setText("Chest"):setPosition(18,3):setBackground(colors.gray):setForeground(colors.black)
-    chestCheckbox = inputFrame:addCheckbox():setPosition(17,3):setBackground(colors.black):setForeground(colors.lightGray)
-
-    rtsCheckBoxLabel = inputFrame:addLabel():setText("RTS"):setPosition(18,4):setSize(5,1):setBackground(colors.gray):setForeground(colors.black)
-    rtsCheckbox = inputFrame:addCheckbox():setPosition(17,4):setBackground(colors.black):setForeground(colors.lightGray)
+    view.initBasicDigSettingsGUI(homeInputFrame, digArgs, homeUIInfo, theme)
 
     view.initAdvancedDigSettingsGUI(homeInputFrame, digArgs, theme)
 
@@ -611,25 +683,25 @@ function view.init(frame, turtleInfo, digArgs, homeUIInfo, rednetInfo, theme)
 end
 
 function view.updateArgsUI(digArgs, theme)
-    local options = programDropdown:getOptions()
+    local options = basicDigSettingsGUI.programDropdown:getOptions()
     for i = 1, #options do
         if options[i].text == digArgs.program then
-            programDropdown:selectItem(i)
+            basicDigSettingsGUI.programDropdown:selectItem(i)
         end
     end
-    lengthInput:setValue(digArgs.length or 1)
-    widthInput:setValue(digArgs.width or 1)
-    heightInput:setValue(digArgs.height or 1)
+    basicDigSettingsGUI.lengthInput:setValue(digArgs.length or 1)
+    basicDigSettingsGUI.widthInput:setValue(digArgs.width or 1)
+    basicDigSettingsGUI.heightInput:setValue(digArgs.height or 1)
     if digArgs.offsetDir == "l" then
-        offsetLeftButton:setForeground(colors.black)
-        offsetRightButton:setForeground(colors.lightGray)
+        basicDigSettingsGUI.offsetLeftButton:setForeground(colors.black)
+        basicDigSettingsGUI.offsetRightButton:setForeground(colors.lightGray)
     else
-        offsetLeftButton:setForeground(colors.lightGray)
-        offsetRightButton:setForeground(colors.black)
+        basicDigSettingsGUI.offsetLeftButton:setForeground(colors.lightGray)
+        basicDigSettingsGUI.offsetRightButton:setForeground(colors.black)
     end
-    torchCheckbox:setValue(digArgs.torch.torch)
-    chestCheckbox:setValue(digArgs.chest.chest)
-    rtsCheckbox:setValue(digArgs.rts)
+    basicDigSettingsGUI.torchCheckbox:setValue(digArgs.torch.torch)
+    basicDigSettingsGUI.chestCheckbox:setValue(digArgs.chest.chest)
+    basicDigSettingsGUI.rtsCheckbox:setValue(digArgs.rts)
     advancedDigSettingsGUI.ignoreInventoryCheckbox:setValue(digArgs.ignoreInventory)
     advancedDigSettingsGUI.ignoreFuelCheckbox:setValue(digArgs.ignoreFuel)
     advancedDigSettingsGUI.noPickupCheckbox:setValue(digArgs.noPickup)
@@ -640,18 +712,18 @@ end
 
 function view.getDigArgsFromUI()
     return digOSUtil.createDigArgsTable(
-        programDropdown:getItem(programDropdown:getItemIndex()).text,
+        basicDigSettingsGUI.programDropdown:getItem(basicDigSettingsGUI.programDropdown:getItemIndex()).text,
         "",
-        tonumber(lengthInput:getValue()),
-        tonumber(widthInput:getValue()),
-        tonumber(heightInput:getValue()),
+        tonumber(basicDigSettingsGUI.lengthInput:getValue()),
+        tonumber(basicDigSettingsGUI.widthInput:getValue()),
+        tonumber(basicDigSettingsGUI.heightInput:getValue()),
         getOffsetValue(),
-        torchCheckbox:getValue(),
+        basicDigSettingsGUI.torchCheckbox:getValue(),
         tonumber(getTorchDistanceInputValue(advancedDigSettingsGUI.torchDistanceInput)),
         tonumber(getInventorySlotInputValue(advancedDigSettingsGUI.torchSlotInput)),
-        chestCheckbox:getValue(),
+        basicDigSettingsGUI.chestCheckbox:getValue(),
         tonumber(getInventorySlotInputValue(advancedDigSettingsGUI.chestSlotInput)),
-        rtsCheckbox:getValue(),
+        basicDigSettingsGUI.rtsCheckbox:getValue(),
         advancedDigSettingsGUI.ignoreInventoryCheckbox:getValue(),
         advancedDigSettingsGUI.ignoreFuelCheckbox:getValue(),
         advancedDigSettingsGUI.noPickupCheckbox:getValue(),
@@ -661,17 +733,17 @@ function view.getDigArgsFromUI()
 end
 
 function view.resetArgsUI()
-    programDropdown:selectItem(1)
-    lengthInput:setValue("1")
-    widthInput:setValue("1")
-    heightInput:setValue("1")
+    basicDigSettingsGUI.programDropdown:selectItem(1)
+    basicDigSettingsGUI.lengthInput:setValue("1")
+    basicDigSettingsGUI.widthInput:setValue("1")
+    basicDigSettingsGUI.heightInput:setValue("1")
 
-    offsetLeftButton:setForeground(colors.lightGray)
-    offsetRightButton:setForeground(colors.black)
+    basicDigSettingsGUI.offsetLeftButton:setForeground(colors.lightGray)
+    basicDigSettingsGUI.offsetRightButton:setForeground(colors.black)
 
-    torchCheckbox:setValue(false)
-    chestCheckbox:setValue(false)
-    rtsCheckbox:setValue(false)
+    basicDigSettingsGUI.torchCheckbox:setValue(false)
+    basicDigSettingsGUI.chestCheckbox:setValue(false)
+    basicDigSettingsGUI.rtsCheckbox:setValue(false)
     
     advancedDigSettingsGUI.ignoreInventoryCheckbox:setValue(false)
     advancedDigSettingsGUI.ignoreFuelCheckbox:setValue(false)
@@ -689,19 +761,31 @@ function view.getLogList()
     return {logList = logList}
 end
 
-function view.getProgramDropdown()
-    return {programDropdown = programDropdown}
-end
-
-function view.getBaseGUI()
+function view.getBasicDigSettingsGUI()
     return {
-        homeFrame = homeFrame,
-        logFrame = logFrame,
-        logLabel = logLabel,
-        logList = logList,
-        inputFrame = inputFrame,
-        programDropdownLabel = programDropdownLabel,
-        programDropdown = programDropdown,
+        frame = frame,
+        programDropdownLabel = basicDigSettingsGUI.programDropdownLabel,
+        programDropdown = basicDigSettingsGUI.programDropdown,
+        lengthInputLabel = basicDigSettingsGUI.lengthInputLabel,
+        lengthInput = basicDigSettingsGUI.lengthInput,
+        lengthSubButton = basicDigSettingsGUI.lengthSubButton,
+        lengthAddButton = basicDigSettingsGUI.lengthAddButton,
+        widthInputLabel = basicDigSettingsGUI.widthInputLabel,
+        widthInput = basicDigSettingsGUI.widthInput,
+        widthSubButton = basicDigSettingsGUI.widthSubButton,
+        widthAddButton = basicDigSettingsGUI.widthAddButton,
+        heightInputLabel = basicDigSettingsGUI.heightInputLabel,
+        heightInput = basicDigSettingsGUI.heightInput,
+        heightSubButton = basicDigSettingsGUI.heightSubButton,
+        heightAddButton = basicDigSettingsGUI.heightAddButton,
+        offsetLeftButton = basicDigSettingsGUI.offsetLeftButton,
+        offsetRightButton = basicDigSettingsGUI.offsetRightButton,
+        torchCheckBoxLabel = basicDigSettingsGUI.torchCheckBoxLabel,
+        torchCheckbox = basicDigSettingsGUI.torchCheckbox,
+        chestCheckBoxLabel = basicDigSettingsGUI.chestCheckBoxLabel,
+        chestCheckbox = basicDigSettingsGUI.chestCheckbox,
+        rtsCheckBoxLabel = basicDigSettingsGUI.rtsCheckBoxLabel,
+        rtsCheckbo = basicDigSettingsGUI.rtsCheckbox
     }
 end
 
@@ -745,20 +829,20 @@ end
 
 function view.getDigArgs()
     return {
-        lengthInput = lengthInput,
-        lengthSubButton = lengthSubButton,
-        lengthAddButton = lengthAddButton,
-        widthInput = widthInput,
-        widthSubButton = widthSubButton,
-        widthAddButton = widthAddButton,
-        heightInput = heightInput,
-        heightSubButton = heightSubButton,
-        heightAddButton = heightAddButton,
-        offsetLeftButton = offsetLeftButton,
-        offsetRightButton = offsetRightButton,
-        torchCheckbox = torchCheckbox,
-        chestCheckbox = chestCheckbox,
-        rtsCheckbox = rtsCheckbox,
+        lengthInput = basicDigSettingsGUI.lengthInput,
+        lengthSubButton = basicDigSettingsGUI.lengthSubButton,
+        lengthAddButton = basicDigSettingsGUI.lengthAddButton,
+        widthInput = basicDigSettingsGUI.widthInput,
+        widthSubButton = basicDigSettingsGUI.widthSubButton,
+        widthAddButton = basicDigSettingsGUI.widthAddButton,
+        heightInput = basicDigSettingsGUI.heightInput,
+        heightSubButton = basicDigSettingsGUI.heightSubButton,
+        heightAddButton = basicDigSettingsGUI.heightAddButton,
+        offsetLeftButton = basicDigSettingsGUI.offsetLeftButton,
+        offsetRightButton = basicDigSettingsGUI.offsetRightButton,
+        torchCheckbox = basicDigSettingsGUI.torchCheckbox,
+        chestCheckbox = basicDigSettingsGUI.chestCheckbox,
+        rtsCheckbox = basicDigSettingsGUI.rtsCheckbox,
         ignoreInvCheckbox = advancedDigSettingsGUI.ignoreInventoryCheckbox,
         ignoreFuelCheckbox = advancedDigSettingsGUI.ignoreFuelCheckbox,
         noPickupCheckbox = advancedDigSettingsGUI.noPickupCheckbox

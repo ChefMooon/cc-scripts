@@ -97,6 +97,13 @@ function fileUtil.deleteTodo(data, lineNumber)
 end
 
 function fileUtil.moveTodo(data, index, newIndex)
+    -- Check if the index is within the bounds of the data
+    -- todo add better ways to return errors and information
+    if newIndex < 1 then
+        newIndex = 1
+    elseif newIndex > #data then
+        newIndex = #data
+    end
     if data[newIndex] and data[index] then
         local swap = data[index]
         data[index] = data[newIndex]

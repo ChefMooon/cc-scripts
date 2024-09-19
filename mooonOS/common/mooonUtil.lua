@@ -6,6 +6,73 @@
 
 local fileUtil = {}
 
+fileUtil.lib = {
+    base = {
+        mooonUtil = {
+            path = "mooonOS/common/mooonUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
+        },
+        basalt = {
+            path = "basalt.lua",
+            url = "wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua "
+        }
+    },
+    common = {
+        fileUtil = {
+            path = "mooonOS/common/fileUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/fileUtil.lua"
+        },
+        rednetUtil = {
+            path = "mooonOS/common/rednetUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/rednetUtil.lua"
+        },
+        settingsUtil = {
+            path = "mooonOS/common/settingsUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/settingsUtil.lua"
+        }
+    },
+    digOS = {
+        digOSViewHome = {
+            path = "mooonOS/digOS/digOSViewHome.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewHome.lua"
+        },
+        digOSViewControl = {
+            path = "mooonOS/digOS/digOSViewControl.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewControl.lua"
+        },
+        digOSViewSettings = {
+            path = "mooonOS/digOS/digOSViewSettings.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewSettings.lua"
+        },
+        digOSViewInfo = {
+            path = "mooonOS/digOS/digOSViewInfo.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewInfo.lua"
+        },
+        digOSUtil = {
+            path = "mooonOS/digOS/digOSUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSUtil.lua"
+        },
+        digUtil = {
+            path = "mooonOS/common/digUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/digUtil.lua"
+        }
+    },
+    todoOS = {
+        todoOSView = {
+            path = "mooonOS/todoOS/todoOSView.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSView.lua"
+        },
+        todoOSViewInfo = {
+            path = "mooonOS/todoOS/todoOSViewInfo.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSViewInfo.lua"
+        },
+        todoOSUtil = {
+            path = "mooonOS/todoOS/todoOSUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSUtil.lua"
+        }
+    }
+}
+
 function fileUtil.getBasalt(path)
     if not (fs.exists(path)) then
         shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. path)

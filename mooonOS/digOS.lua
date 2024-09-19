@@ -9,6 +9,9 @@
 -- Redo programs download
 -- Send updates back to remote
 
+-- improve log data structure
+    -- add timestamp maybe more?
+
 --- Bigger Ideas
 --- 
 
@@ -30,65 +33,29 @@ local defaultTheme = {
 ----- REQUIRE START -----
 
 local lib = {
-    mooonUtil = {
-        path = "mooonOS/common/mooonUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
-    },
-    basalt = {
-        path = "basalt.lua",
-        url = "wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua "
-    }
-}
-
-local subPrograms = {
-    digOSViewHome = {
-        path = "mooonOS/digOS/digOSViewHome.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewHome.lua"
-    },
-    digOSViewControl = {
-        path = "mooonOS/digOS/digOSViewControl.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewControl.lua"
-    },
-    digOSViewSettings = {
-        path = "mooonOS/digOS/digOSViewSettings.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewSettings.lua"
-    },
-    digOSViewInfo = {
-        path = "mooonOS/digOS/digOSViewInfo.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewInfo.lua"
-    },
-    digOSUtil = {
-        path = "mooonOS/digOS/digOSUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSUtil.lua"
-    },
-    rednetUtil = {
-        path = "mooonOS/common/rednetUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/rednetUtil.lua"
-    },
-    settingsUtil = {
-        path = "mooonOS/common/settingsUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/settingsUtil.lua"
-    },
-    digUtil = {
-        path = "mooonOS/common/digUtil.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/digUtil.lua"
+    base = {
+        mooonUtil = {
+            path = "mooonOS/common/mooonUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/mooonUtil.lua"
+        }
     }
 }
 
 local digPrograms = {
     digOS_mid_out = {
-        path = "mooonOS/digOS/digPrograms/digOS-mid-out.lua",
-        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digPrograms/digOS-mid-out.lua"
+        path = "mooonOS/digOS/digPrograms/digOS-clear-mid-out.lua",
+        url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digPrograms/digOS-clear-mid-out.lua"
     }
 }
 
-if not (fs.exists(lib.mooonUtil.path)) then
-    shell.run("wget " .. lib.mooonUtil.url .. " " .. lib.mooonUtil.path)
+if not (fs.exists(lib.base.mooonUtil.path)) then
+    shell.run("wget " .. li.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
 end
-local mooonUtil = require(lib.mooonUtil.path:gsub(".lua", ""))
-local basalt = mooonUtil.getBasalt(lib.basalt.path)
+local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
+local basalt = mooonUtil.getBasalt(mooonUtil.lib.base.basalt.path)
+-- local basalt = mooonUtil.getBasalt(lib.basalt.path)
 
-for _, program in pairs(subPrograms) do
+for _, program in pairs(mooonUtil.lib.digOS) do
     if not (fs.exists(program.path)) then
         print(mooonUtil.getFilenameFromPath(program.path) .. " Not Found. Installing ...")
         mooonUtil.downloadFile(program.url, program.path)
@@ -97,15 +64,16 @@ for _, program in pairs(subPrograms) do
     end
 end
 
-local settingsUtil = mooonUtil.getProgram(subPrograms.settingsUtil.path)
-local digOSUtil = mooonUtil.getProgram(subPrograms.digOSUtil.path)
-local rednetUtil = mooonUtil.getProgram(subPrograms.rednetUtil.path)
-local digUtil = mooonUtil.getProgram(subPrograms.digUtil.path)
+local settingsUtil = mooonUtil.getProgram(mooonUtil.lib.common.settingsUtil.path)
+local rednetUtil = mooonUtil.getProgram(mooonUtil.lib.common.rednetUtil.path)
 
-local viewHome = mooonUtil.getProgram(subPrograms.digOSViewHome.path)
-local viewControl = mooonUtil.getProgram(subPrograms.digOSViewControl.path)
-local viewSettings = mooonUtil.getProgram(subPrograms.digOSViewSettings.path)
-local viewInfo = mooonUtil.getProgram(subPrograms.digOSViewInfo.path)
+local digOSUtil = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSUtil.path)
+local digUtil = mooonUtil.getProgram(mooonUtil.lib.digOS.digUtil.path)
+
+local viewHome = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSViewHome.path)
+local viewControl = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSViewControl.path)
+local viewSettings = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSViewSettings.path)
+local viewInfo = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSViewInfo.path)
 
 ----- REQUIRE END -----
 
@@ -222,7 +190,8 @@ local function refuelButton(amount)
         return "Invalid refuel amount."
     end
 
-    turtle.select(turtleInfo.fuelSlot)
+    -- todo rework fuel slot, is it needed for dig programs or anything?
+    turtleInfo.fuelSlot = turtle.getSelectedSlot()
     if result then
         local newFuel = turtle.getFuelLevel()
         return "Succesful Refuel. " .. tostring(newFuel - startFuel) .. " Fuel added."
@@ -425,109 +394,15 @@ end)
 
 local function initializeProgramsDropdown()
     for i = 1, #programs do
-        viewHome.getBaseGUI().programDropdown:addItem(programs[i])
+        viewHome.getBasicDigSettingsGUI().programDropdown:addItem(programs[i])
     end
 end
-
-viewHome.getBaseGUI().programDropdown:onChange(function(self, item)
-    digArgs.program = tostring(item.text)
-end)
 
 local function initializeProgramsInfo()
     for i = 1, #programs do
         viewInfo.get().programsInfoList:addItem(programs[i])
     end
 end
-
-local function getNumberChange(_button)
-    local result = 0
-    if _button == 1 then
-        result = 1
-    elseif _button == 2 then
-        result = 5
-    end
-    return result
-end
-
-viewHome.getDigArgs().lengthSubButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") then
-        local newValue = viewHome.getDigArgs().lengthInput:getValue() - getNumberChange(button)
-        if newValue > 0 then
-            digArgs.length = newValue
-            viewHome.getDigArgs().lengthInput:setValue(digArgs.length)
-        end
-    end
-end)
-
-viewHome.getDigArgs().lengthAddButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") then
-        local newValue = viewHome.getDigArgs().lengthInput:getValue() + getNumberChange(button)
-        if newValue < 1001 then
-            digArgs.length = newValue
-            viewHome.getDigArgs().lengthInput:setValue(digArgs.length)
-        end
-    end
-end)
-
-viewHome.getDigArgs().widthSubButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") then
-        local newValue = viewHome.getDigArgs().widthInput:getValue() - getNumberChange(button)
-        if newValue > 0 then
-            digArgs.width = newValue
-            viewHome.getDigArgs().widthInput:setValue(digArgs.width)
-        end
-    end
-end)
-
-viewHome.getDigArgs().widthAddButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") then
-        local newValue = viewHome.getDigArgs().widthInput:getValue() + getNumberChange(button)
-        if newValue < 1001 then
-            digArgs.width = newValue
-            viewHome.getDigArgs().widthInput:setValue(digArgs.width)
-        end
-    end
-end)
-
-viewHome.getDigArgs().heightSubButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") then
-        local newValue = viewHome.getDigArgs().heightInput:getValue() - getNumberChange(button)
-        if newValue > 0 then
-            digArgs.height = newValue
-            viewHome.getDigArgs().heightInput:setValue(digArgs.height)
-        end
-    end
-end)
-
-viewHome.getDigArgs().heightAddButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") then
-        local newValue = viewHome.getDigArgs().heightInput:getValue() + getNumberChange(button)
-        if newValue < 1001 then
-            digArgs.height = newValue
-            viewHome.getDigArgs().heightInput:setValue(digArgs.height)
-        end
-    end
-end)
-
-viewHome.getDigArgs().offsetLeftButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        self:setForeground(colors.black)
-        viewHome.getDigArgs().offsetRightButton:setForeground(colors.lightGray)
-        if digArgs.offsetDir ~= "l" then
-            digArgs.offsetDir = "l"
-        end
-    end
-end)
-
-viewHome.getDigArgs().offsetRightButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        self:setForeground(colors.black)
-        viewHome.getDigArgs().offsetLeftButton:setForeground(colors.lightGray)
-        if digArgs.offsetDir ~= "r" then
-            digArgs.offsetDir = "r"
-        end
-    end
-end)
 
 local function selectSaved(_select)
     local buttons = { 
@@ -925,6 +800,7 @@ menubarRednetStatusButton:onClick(function(self, event, button, x, y)
 end)
 
 -- TODO: Create ClipboardThread so the program does not hang while waiting
+-- todo update this to use digArgs data structure after digOSRemote is complete
 local function clipboard(_function)
     if rednetInfo.rednetOpen then
         if _function == "copy" then
@@ -973,10 +849,6 @@ viewHome.getClipboardGUI().pasteButton:onClick(function(self, event, button, x, 
 end)
 
 local function runDig()
-    digArgs.program = viewHome.getBaseGUI().programDropdown:getItem(viewHome.getBaseGUI().programDropdown:getItemIndex()).text
-    digArgs.length = tonumber(viewHome.getDigArgs().lengthInput:getValue()) or 0
-    digArgs.width = tonumber(viewHome.getDigArgs().widthInput:getValue()) or 0
-    digArgs.height = tonumber(viewHome.getDigArgs().heightInput:getValue()) or 0
     tryRunDig()
     updateFuelLabel(turtle.getFuelLevel())
 end
@@ -1125,59 +997,7 @@ end)
 
 ----- SETTINGS MENU START (backend) -----
 
-local function chestCheckboxChange(self)
-    if self:getValue() then
-        digArgs.chest.chest = false
-    else
-        digArgs.chest.chest = true
-    end
-end
-viewHome.getDigArgs().chestCheckbox:onChange(chestCheckboxChange)
 
-local function torchCheckboxChange(self)
-    if self:getValue() then
-        digArgs.torch.torch = false
-    else
-        digArgs.torch.torch = true
-    end
-end
-viewHome.getDigArgs().torchCheckbox:onChange(torchCheckboxChange)
-
-local function rtsCheckboxChange(self)
-    if self:getValue() then
-        digArgs.rts = false
-    else
-        digArgs.rts = true
-    end
-end
-viewHome.getDigArgs().rtsCheckbox:onChange(rtsCheckboxChange)
-
-local function ignoreInvCheckboxChange(self)
-    if self:getValue() then
-        digArgs.ignoreInventory = false
-    else
-        digArgs.ignoreInventory = true
-    end
-end
-viewHome.getDigArgs().ignoreInvCheckbox:onChange(ignoreInvCheckboxChange)
-
-local function ignoreFuelCheckboxChange(self)
-    if self:getValue() then
-        digArgs.ignoreFuel = false
-    else
-        digArgs.ignoreFuel = true
-    end
-end
-viewHome.getDigArgs().ignoreFuelCheckbox:onChange(ignoreFuelCheckboxChange)
-
-local function noPickupCheckboxChange(self)
-    if self:getValue() then
-        digArgs.noPickup = false
-    else
-        digArgs.noPickup = true
-    end
-end
-viewHome.getDigArgs().noPickupCheckbox:onChange(noPickupCheckboxChange)
 
 ----- SETTINGS MENU END -----
 
