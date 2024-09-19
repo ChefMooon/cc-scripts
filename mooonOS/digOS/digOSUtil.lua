@@ -35,7 +35,8 @@
 
 local digOSUtil = {}
 
-function digOSUtil.createDigArgsString(program, command, length, width, height, offsetDir, torch, torchDistance, torchSlot, chest, chestSlott, rts, ignoreInventory, ignoreFuel, noPickup, blockWhiteList, blockBlackList)
+-- todo fix this 3 unused inputs
+function digOSUtil.createDigArgsString(program, command, length, width, height, offsetDir, torch, torchDistance, torchSlot, chest, chestSlot, rts, ignoreInventory, ignoreFuel, noPickup, blockWhiteList, blockBlackList)
     return table.concat( { 
         "digOS-" .. program .. ".lua",
         tostring(command),
@@ -43,8 +44,8 @@ function digOSUtil.createDigArgsString(program, command, length, width, height, 
         tostring(width),
         tostring(height),
         tostring(offsetDir),
-        tostring(torch.torch), tostring(torch.distance), tostring(torch.slot),
-        tostring(chest.chest), tostring(chest.slot),
+        tostring(torch.torch), tostring(torchDistance), tostring(torchSlot),
+        tostring(chest.chest), tostring(chestSlot),
         tostring(rts),
         tostring(ignoreInventory),
         tostring(ignoreFuel),
