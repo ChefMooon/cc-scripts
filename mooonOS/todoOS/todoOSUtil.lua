@@ -1,5 +1,8 @@
--- todoOSUtil V1.0.0
--- Created by: ChefMooon
+rogramInfo = {
+    name = "todoOSUtil",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 --- The file contains the folowing logic:
 ----- File Save/Load

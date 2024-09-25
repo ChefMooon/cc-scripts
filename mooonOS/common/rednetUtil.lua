@@ -1,5 +1,8 @@
--- rednetUtil V1.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "rednetUtil",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 --PROGRAM TODO--
 -- 

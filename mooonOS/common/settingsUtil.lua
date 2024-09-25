@@ -1,5 +1,8 @@
--- settingsUtil
--- Created by: ChefMooon
+local programInfo = {
+    name = "settingsUtil",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 -- This program contains all functions related to program settings
 --PROGRAM TODO--

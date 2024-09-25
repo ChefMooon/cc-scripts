@@ -67,10 +67,10 @@ digArgs = {
 ```
 
 ### Screenshots
-![home_1](/mooonOS/digOS/img/home_1.png)
-![home_2](/mooonOS/digOS/img/home_2.png)
-![home_3](/mooonOS/digOS/img/home_3.png)
-![home_3](/mooonOS/digOS/img/home_3.png)
-![control](/mooonOS/digOS/img/control.png)
-![settings](/mooonOS/digOS/img/settings.png)
-![info](/mooonOS/digOS/img/info.png)
+![home_1](/img/mooonOS/digOS/home_1.png)
+![home_2](/img/mooonOS/digOS/home_2.png)
+![home_3](/img/mooonOS/digOS/home_3.png)
+![home_3](/img/mooonOS/digOS/home_3.png)
+![control](/img/mooonOS/digOS/control.png)
+![settings](/img/mooonOS/digOS/settings.png)
+![info](/img/mooonOS/digOS/info.png)

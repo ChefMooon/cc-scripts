@@ -1,5 +1,8 @@
--- digOSViewMove V1.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "digOSViewMove",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 --PROGRAM TODO--
 -- refactor, variables can be made into tables

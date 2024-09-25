@@ -1,5 +1,8 @@
--- todoOSView V1.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "todoOSView",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 ----- PROGRAM TODO -----
 --- Implement the _theme more in each function

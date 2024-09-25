@@ -1,5 +1,8 @@
--- digOSViewSettings V1.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "digOSViewSettings",
+    version = "V1.0.0",
+    author = "ChefMooon"
+}
 
 --PROGRAM TODO--
 -- refactor, variables can be made into tables

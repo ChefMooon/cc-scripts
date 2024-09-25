@@ -1,5 +1,8 @@
--- digUtil
--- Created by: ChefMooon
+local programInfo = {
+    name = "digUtil",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 -- This program contains all functions related to turtle movement with optional digging
 --PROGRAM TODO--
@@ -35,7 +38,7 @@ function digUtil.down(count, dig)
     if count == nil then count = 1 end
     for i = 1, count do
         if dig then
-            while turtle.detect() do
+            while turtle.detectDown() do
                 digSuccess, digError = turtle.digDown()
                 if digSuccess then
                     digCount = digCount + 1
@@ -56,7 +59,7 @@ function digUtil.up(count, dig)
     if count == nil then count = 1 end
     for i = 1, count do
         if dig then
-            while turtle.detect() do
+            while turtle.detectUp() do
                 digSuccess, digError = turtle.digUp()
                 if digSuccess then
                     digCount = digCount + 1

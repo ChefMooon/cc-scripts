@@ -1,5 +1,8 @@
--- digOS V2.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "digOS",
+    version = "2.0.1",
+    author = "ChefMooon"
+}
 
 -- BUILD TO SCALE --
 
@@ -13,7 +16,9 @@
     -- add timestamp maybe more?
 
 --- Bigger Ideas
---- 
+--- implement theme usage and switching
+--- add bimg images to the buttons for easier use
+---     figure out how to make those images
 
 -- this will help filter broadcast messages
 local programName = "digOS"

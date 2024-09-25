@@ -1,5 +1,8 @@
--- digOSUtil
--- Created by: ChefMooon
+local programInfo = {
+    name = "digOSUtil",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 -- This program contains all functions unique to digOS
 --PROGRAM TODO--

@@ -1,5 +1,8 @@
--- digOS-clear-mid-out
--- Created by: ChefMooon
+local programInfo = {
+    name = "digOS-clear-mid-out",
+    version = "1.1.0",
+    author = "ChefMooon"
+}
 
 --- Required Libraries ---
 --- These will always be downloaded as they are required by digOS

@@ -1,5 +1,8 @@
--- digOSViewHome V1.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "digOSViewHome",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 --PROGRAM TODO--
 -- refactor, variables can be made into tables
