@@ -1,5 +1,8 @@
--- todoOS V1.0.0
--- Created by: ChefMooon
+local programInfo = {
+    name = "todoOS",
+    version = "1.0.0",
+    author = "ChefMooon"
+}
 
 ----- PROGRAM TODO -----
 --- Add style options for todo's ie ability to change color of text (3 options?)
@@ -10,17 +13,6 @@
 ---     Enter to create
 ---     Delete to delete
 ---     Arrow keys up/down change selected
-
--- this will help filter broadcast messages
-local programName = "todoOS"
-local programVersion = "1.0.0"
-local programDescription = "This is a simple Todo list."
-
-local programInfo = {
-    programName = "todoOS",
-    programVersion = "1.0.0",
-    programDescription, "This is a simple Todo list."
-}
 
 ----- REQUIRE START -----
 
@@ -34,7 +26,7 @@ local lib = {
 }
 
 if not (fs.exists(lib.base.mooonUtil.path)) then
-    shell.run("wget " .. li.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
+    shell.run("wget " .. lib.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
 end
 local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
 local basalt = mooonUtil.getBasalt(mooonUtil.lib.base.basalt.path)
@@ -95,7 +87,7 @@ local menubar = main:addMenubar():setScrollable()
         openSubFrame(self:getItemIndex())
     end)
     :addItem("Home")
-    :addItem("Settings")
+    :addItem("Adv.")
     :addItem("Info")
 
 
