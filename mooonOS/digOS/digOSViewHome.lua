@@ -28,9 +28,14 @@ local LEGEND = {
     "L = Length",
     "W = Width",
     "H = Height",
-    "\29 = Presets",
-    "\4 = Advanced Settings",
-    "\18 = Inventory Controller",
+    "L-Click +/- 1, R-Click +/- 5",
+    "",
+    "\29 = Presets*",
+    "\4 = Advanced Settings*",
+    "\18 = Inventory Controller*",
+    " * right click to hide",
+    "",
+    "REFUEL = L-Click single, R-Click all"
 }
 
 local view = {}
@@ -50,6 +55,7 @@ local fuelButton
 
 local basicDigSettingsGUI = {
     frame,
+    programDropdownFrame,
     programDropdownLabel,
     programDropdown,
     lengthInputLabel,
@@ -76,6 +82,8 @@ local basicDigSettingsGUI = {
 
 local legendGUI = {
     frame,
+    scrollableFrame,
+    list,
     label,
     showButton,
     hideButton,
@@ -243,11 +251,11 @@ end
 local buttonFrame, runButton, resetButton
 
 function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
-    basicDigSettingsGUI.frame = frame:addFrame():setPosition(1, 2):setSize(22, 4)
+    basicDigSettingsGUI.frame = frame:addFrame():setPosition(1, 2):setSize("{parent.w-5}", 4)
 
     basicDigSettingsGUI.programDropdownLabel = basicDigSettingsGUI.frame:addLabel():setText("Program:"):setPosition(1, 1)
 
-    basicDigSettingsGUI.programDropdown = basicDigSettingsGUI.frame:addDropdown():setPosition(9, 1):setSize(14,1)
+    basicDigSettingsGUI.programDropdown = basicDigSettingsGUI.frame:addDropdown():setPosition(9, 1):setSize(27,1)
 
     basicDigSettingsGUI.lengthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("L:"):setPosition(1, 2)
     basicDigSettingsGUI.lengthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.length)
@@ -348,35 +356,35 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
 end
 
 function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
-    advancedDigSettingsGUI.frame = frame:addFrame():setPosition(24, 2):setSize(12, 7):hide()
+    advancedDigSettingsGUI.frame = frame:addFrame():setPosition(24, 3):setSize(12, 6):hide()
 
-    advancedDigSettingsGUI.label = advancedDigSettingsGUI.frame:addLabel():setText("Adv Settings"):setPosition(1, 1)
+    -- advancedDigSettingsGUI.label = advancedDigSettingsGUI.frame:addLabel():setText("Adv Settings"):setPosition(1, 1)
 
-    advancedDigSettingsGUI.ignoreInventoryCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 2):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.ignoreInventoryCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.ignoreInventoryCheckbox = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
     advancedDigSettingsGUI.ignoreInventoryCheckboxLabel = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addLabel():setText("\120Inv"):setPosition(2, 1)
 
-    advancedDigSettingsGUI.ignoreFuelCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(7, 2):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.ignoreFuelCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(7, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.ignoreFuelCheckbox = advancedDigSettingsGUI.ignoreFuelCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
     advancedDigSettingsGUI.ignoreFuelCheckboxLabel = advancedDigSettingsGUI.ignoreFuelCheckboxFrame:addLabel():setText("\120Fuel"):setPosition(2, 1)
 
-    advancedDigSettingsGUI.noPickupCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 3):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.noPickupCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 2):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.noPickupCheckbox = advancedDigSettingsGUI.noPickupCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
     advancedDigSettingsGUI.noPickupCheckboxLabel = advancedDigSettingsGUI.noPickupCheckboxFrame:addLabel():setText("Drop All"):setPosition(3, 1)
 
-    advancedDigSettingsGUI.torchDistanceFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 4):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.torchDistanceFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 3):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.torchDistanceInput = advancedDigSettingsGUI.torchDistanceFrame:addInput():setPosition(1, 1):setSize(4, 1):setInputType("number"):setInputLimit(2):setValue(digArgs.torch.distance)
     advancedDigSettingsGUI.torchDistanceDecreaseButton = advancedDigSettingsGUI.torchDistanceFrame:addButton():setText("\17"):setPosition(5, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchDistanceIncreaseButton = advancedDigSettingsGUI.torchDistanceFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchDistanceLabel = advancedDigSettingsGUI.torchDistanceFrame:addLabel():setText("TSpace"):setPosition(7, 1)
 
-    advancedDigSettingsGUI.torchSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 5):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.torchSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 4):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.torchSlotInput = advancedDigSettingsGUI.torchSlotFrame:addInput():setPosition(1, 1):setSize(4, 1):setInputType("number"):setInputLimit(2):setValue(digArgs.torch.slot)
     advancedDigSettingsGUI.torchSlotDecreaseButton = advancedDigSettingsGUI.torchSlotFrame:addButton():setText("\17"):setPosition(5, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchSlotIncreaseButton = advancedDigSettingsGUI.torchSlotFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchSlotLabel = advancedDigSettingsGUI.torchSlotFrame:addLabel():setText("TSlot"):setPosition(7, 1)
 
-    advancedDigSettingsGUI.chestSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 6):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.chestSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 5):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.chestSlotInput = advancedDigSettingsGUI.chestSlotFrame:addInput():setPosition(1, 1):setSize(4, 1):setInputType("number"):setInputLimit(2):setValue(digArgs.chest.slot)
     advancedDigSettingsGUI.chestSlotDecreaseButton = advancedDigSettingsGUI.chestSlotFrame:addButton():setText("\17"):setPosition(5, 1):setSize(1, 1)
     advancedDigSettingsGUI.chestSlotIncreaseButton = advancedDigSettingsGUI.chestSlotFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
@@ -448,28 +456,28 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
 end
 
 function view.initSavedGUI(frame, homeUIInfo, theme)
-    savedGUI.frame = frame:addFrame():setPosition(24,2):setSize(11,4):setBackground(colors.gray):hide()
+    savedGUI.frame = frame:addFrame():setPosition(24,3):setSize(11,3):setBackground(colors.gray):hide()
 
-    savedGUI.labelFrame = savedGUI.frame:addFrame():setPosition(1,1):setSize("{parent.w}",1):setBackground(colors.lightGray)
-    savedGUI.label = savedGUI.labelFrame:addLabel():setText("Presets"):setPosition(3,1)
+    -- savedGUI.labelFrame = savedGUI.frame:addFrame():setPosition(1,1):setSize("{parent.w}",1):setBackground(colors.lightGray)
+    -- savedGUI.label = savedGUI.labelFrame:addLabel():setText("Presets"):setPosition(3,1)
 
-    savedGUI.saved1Button = savedGUI.frame:addButton():setText("1"):setPosition(2,2):setSize(1,1):setForeground(homeUIInfo.saved1ButtonColor)
-    savedGUI.saved2Button = savedGUI.frame:addButton():setText("2"):setPosition(4,2):setSize(1,1):setForeground(homeUIInfo.saved2ButtonColor)
-    savedGUI.saved3Button = savedGUI.frame:addButton():setText("3"):setPosition(6,2):setSize(1,1):setForeground(homeUIInfo.saved3ButtonColor)
-    savedGUI.saved4Button = savedGUI.frame:addButton():setText("4"):setPosition(8,2):setSize(1,1):setForeground(homeUIInfo.saved4ButtonColor)
-    savedGUI.saved5Button = savedGUI.frame:addButton():setText("5"):setPosition(10,2):setSize(1,1):setForeground(homeUIInfo.saved5ButtonColor)
+    savedGUI.saved1Button = savedGUI.frame:addButton():setText("1"):setPosition(2,1):setSize(1,1):setForeground(homeUIInfo.saved1ButtonColor)
+    savedGUI.saved2Button = savedGUI.frame:addButton():setText("2"):setPosition(4,1):setSize(1,1):setForeground(homeUIInfo.saved2ButtonColor)
+    savedGUI.saved3Button = savedGUI.frame:addButton():setText("3"):setPosition(6,1):setSize(1,1):setForeground(homeUIInfo.saved3ButtonColor)
+    savedGUI.saved4Button = savedGUI.frame:addButton():setText("4"):setPosition(8,1):setSize(1,1):setForeground(homeUIInfo.saved4ButtonColor)
+    savedGUI.saved5Button = savedGUI.frame:addButton():setText("5"):setPosition(10,1):setSize(1,1):setForeground(homeUIInfo.saved5ButtonColor)
 
-    savedGUI.loadSavedButton = savedGUI.frame:addButton():setText("LOAD"):setPosition(2,3):setSize(4,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    savedGUI.saveSavedButton = savedGUI.frame:addButton():setText("SAVE"):setPosition(7,3):setSize(4,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    savedGUI.resetSavedButton = savedGUI.frame:addButton():setText("RESET"):setPosition(4,4):setSize(5,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    savedGUI.loadSavedButton = savedGUI.frame:addButton():setText("LOAD"):setPosition(2,2):setSize(4,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    savedGUI.saveSavedButton = savedGUI.frame:addButton():setText("SAVE"):setPosition(7,2):setSize(4,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    savedGUI.resetSavedButton = savedGUI.frame:addButton():setText("RESET"):setPosition(4,3):setSize(5,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 end
 
 function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, theme)
-    inventoryControllerGUI.frame = frame:addFrame():setPosition(24,2):setSize(12,7):hide()
+    inventoryControllerGUI.frame = frame:addFrame():setPosition(24, 3):setSize(12, 6):hide()
 
-    inventoryControllerGUI.label = inventoryControllerGUI.frame:addLabel():setText("Inventory"):setPosition(2, 1)
+    -- inventoryControllerGUI.label = inventoryControllerGUI.frame:addLabel():setText("Inventory"):setPosition(2, 1)
 
-    inventoryControllerGUI.directionButtonFrame = inventoryControllerGUI.frame:addFrame():setPosition(2, 2):setSize(3, 3)
+    inventoryControllerGUI.directionButtonFrame = inventoryControllerGUI.frame:addFrame():setPosition(2, 1):setSize(3, 3)
 
     inventoryControllerGUI.northButton = inventoryControllerGUI.directionButtonFrame:addButton():setText("\30"):setPosition(2, 1):setSize(1, 1)
         :onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
@@ -501,9 +509,9 @@ function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, them
         end
     end)
 
-    inventoryControllerGUI.useButton = inventoryControllerGUI.frame:addButton():setText("USE"):setPosition(6, 2):setSize(3, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    inventoryControllerGUI.digButton = inventoryControllerGUI.frame:addButton():setText("DIG"):setPosition(9, 2):setSize(3, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    inventoryControllerGUI.dropButton = inventoryControllerGUI.frame:addButton():setText("DROP"):setPosition(7, 3):setSize(4, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    inventoryControllerGUI.useButton = inventoryControllerGUI.frame:addButton():setText("USE"):setPosition(6, 1):setSize(3, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    inventoryControllerGUI.digButton = inventoryControllerGUI.frame:addButton():setText("DIG"):setPosition(9, 1):setSize(3, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    inventoryControllerGUI.dropButton = inventoryControllerGUI.frame:addButton():setText("DROP"):setPosition(7, 2):setSize(4, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     inventoryControllerGUI.useButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
@@ -521,7 +529,7 @@ function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, them
         end
     end)
 
-    inventoryControllerGUI.inventorySlotSelectFrame = inventoryControllerGUI.frame:addFrame():setPosition(1, 5):setSize(12, 3)
+    inventoryControllerGUI.inventorySlotSelectFrame = inventoryControllerGUI.frame:addFrame():setPosition(1, 4):setSize(12, 3)
 
     inventoryControllerGUI.inventorySlotSelect.button1 = inventoryControllerGUI.inventorySlotSelectFrame:addButton():setText("1"):setPosition(1, 1):setSize(2, 1)
     inventoryControllerGUI.inventorySlotSelect.button2 = inventoryControllerGUI.inventorySlotSelectFrame:addButton():setText("2"):setPosition(3, 1):setSize(2, 1)
@@ -576,6 +584,10 @@ function view.initLegendGUI(frame, parentFrame, theme)
     legendGUI.frame = parentFrame:addFrame():setPosition(1, 2):setSize("{parent.w-2}", "{parent.h-3}"):hide()
     legendGUI.hideButton = legendGUI.frame:addButton():setText("\0X"):setPosition("{parent.w-3}", 1):setSize(3, 1)
 
+    legendGUI.scrollableFrame = legendGUI.frame:addScrollableFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h}")
+
+    legendGUI.list = legendGUI.scrollableFrame:addList():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-3}"):setBackground(colors.lightGray):setSelectionColor(colors.lightGray, colors.black) -- this could be a nightmare for theme stuff
+
     legendGUI.showButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
             legendGUI.frame:show()
@@ -590,7 +602,7 @@ function view.initLegendGUI(frame, parentFrame, theme)
     legendGUI.label = legendGUI.frame:addLabel():setText("Legend:"):setPosition(2, 1)
 
     for i = 1, #LEGEND do
-        legendGUI.frame:addLabel():setText(LEGEND[i]):setPosition(3, i+2)
+        legendGUI.list:addItem(LEGEND[i])
     end
 end
 
@@ -626,21 +638,34 @@ function view.initAdvancedSettingsSelectionGUI(frame, homeUIInfo, digArgs, theme
         end
     end
 
+    local function hideAllFrames()
+        for k, frameHide in pairs(frames) do
+            frameHide.frame:setVisible(false)
+            frameHide.button:setForeground(colors.black) -- todo make this a theme color
+        end
+    end
+
     advancedSettingsSelectionGUI.presetButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
             showFrame("preset")
+        elseif (event == "mouse_click") and (button == 2) then
+            hideAllFrames()
         end
     end)
 
     advancedSettingsSelectionGUI.advancedSettingsButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
             showFrame("advanced")
+        elseif (event == "mouse_click") and (button == 2) then
+            hideAllFrames()
         end
     end)
 
     advancedSettingsSelectionGUI.advancedInventoryControllerButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
             showFrame("inventoryController")
+        elseif (event == "mouse_click") and (button == 2) then
+            hideAllFrames()
         end
     end)
     showFrame("preset") -- todo maybe make it possible to select a favorite to show on startup

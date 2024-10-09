@@ -54,18 +54,20 @@ local digPrograms = {
 }
 
 if not (fs.exists(lib.base.mooonUtil.path)) then
-    shell.run("wget " .. li.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
+    shell.run("wget " .. lib.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
 end
 local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
 local basalt = mooonUtil.getBasalt(mooonUtil.lib.base.basalt.path)
--- local basalt = mooonUtil.getBasalt(lib.basalt.path)
 
 for _, program in pairs(mooonUtil.lib.digOS) do
     if not (fs.exists(program.path)) then
-        print(mooonUtil.getFilenameFromPath(program.path) .. " Not Found. Installing ...")
         mooonUtil.downloadFile(program.url, program.path)
-    else
-        print(mooonUtil.getFilenameFromPath(program.path) .. " Found!")
+    end
+end
+
+for _, program in pairs(mooonUtil.lib.common) do
+    if not (fs.exists(program.path)) then
+        mooonUtil.downloadFile(program.url, program.path)
     end
 end
 
