@@ -32,6 +32,8 @@ local programInfo = {
     -- check if the program is downloaded, if not download and set as startup program
     -- if downloaded, rename as startup program
 
+-- Add the ability to delete this program and all sub programs with a program arg
+
 local defaultTheme = {
     background = colors.gray,
     foreground = colors.yellow,
@@ -55,10 +57,16 @@ local lib = {
 }
 
 if not (fs.exists(lib.base.mooonUtil.path)) then
-    shell.run("wget " .. li.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
+    shell.run("wget " .. lib.base.mooonUtil.url .. " " .. lib.base.mooonUtil.path)
 end
 local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
 local basalt = mooonUtil.getBasalt(mooonUtil.lib.base.basalt.path)
+
+for _, program in pairs(mooonUtil.lib.updateOS) do
+    if not (fs.exists(program.path)) then
+        mooonUtil.downloadFile(program.url, program.path)
+    end
+end
 
 local fileOSUtil = mooonUtil.getProgram(mooonUtil.lib.common.fileOSUtil.path)
 local basaltUtil = mooonUtil.getProgram(mooonUtil.lib.common.basaltUtil.path)
@@ -208,8 +216,11 @@ viewSettings.init(sub[3], defaultTheme)
 ---------- **** BACKEND START **** ----------
 
 local function updateSelectedProgramInfo()
+    if digOSProgram == nil then
+        return
+    end
     digOSProgramMetadata = updateOSUtil.getAllProgramMetaData(digOSProgram)
-    local upToDateStatus = updateOSUtil.compareVersions(digOSProgramMetadata.latestVersion, digOSProgramMetadata.version)
+    local upToDateStatus = 404--updateOSUtil.compareVersions(digOSProgramMetadata.latestVersion, digOSProgramMetadata.version) -- Implement after dev period
     wrappedDescription = mooonUtil.wrapLines(digOSProgram.description, 15) 
     viewHome.updateProgramDetails(digOSProgram, upToDateStatus, wrappedDescription, digOSProgramMetadata, defaultTheme)
 end

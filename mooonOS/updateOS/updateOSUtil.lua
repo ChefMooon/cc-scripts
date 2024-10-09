@@ -100,8 +100,9 @@ function util.getProgramMetadata(program)
     local file = fs.open(program.path, "r")
 
     local keyValuePairs = util.getKeysFromFile(file)
-
-    file.close()
+    if file ~= nil then
+        file.close()
+    end
     return keyValuePairs
 
 
@@ -156,6 +157,9 @@ function util.getAllProgramMetaData(program)
 end
 
 function util.splitVersion(version)
+    if version == nil then
+        return 0, 0, 0
+    end
     local major, minor, patch = string.match(version, "(%d+)%.(%d+)%.(%d+)")
     return tonumber(major), tonumber(minor), tonumber(patch)
 end

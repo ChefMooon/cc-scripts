@@ -144,6 +144,8 @@ function view.updateUpToDateLabel(upToDate, theme)
         elseif upToDate < 0 then
             view.main.detailsUpToDateLabel:setText("Can-update")
         end
+    elseif upToDate == 404 then
+        view.main.detailsUpToDateLabel:setText("404")
     end
 end
 
