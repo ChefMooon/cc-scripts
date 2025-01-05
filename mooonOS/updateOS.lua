@@ -68,6 +68,12 @@ for _, program in pairs(mooonUtil.lib.updateOS) do
     end
 end
 
+for _, program in pairs(mooonUtil.lib.common) do
+    if not (fs.exists(program.path)) then
+        mooonUtil.downloadFile(program.url, program.path)
+    end
+end
+
 local fileOSUtil = mooonUtil.getProgram(mooonUtil.lib.common.fileOSUtil.path)
 local basaltUtil = mooonUtil.getProgram(mooonUtil.lib.common.basaltUtil.path)
 
