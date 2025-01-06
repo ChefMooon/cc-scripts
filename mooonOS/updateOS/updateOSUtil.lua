@@ -69,11 +69,15 @@ function util.mooonOSFiles()
 end
 
 function util.getKeysFromFile(file)
-    local keyValuePairs = {}
+    local keyValuePairs = {
+        name = "",
+        version = "N/A",
+        author = ""
+    }
     local line
 
     if not file then
-        return nil
+        return keyValuePairs
     end
     -- Limit the number of lines to read with maxLines
     for i = 1, 5 do
@@ -104,32 +108,6 @@ function util.getProgramMetadata(program)
         file.close()
     end
     return keyValuePairs
-
-
-
-    -- if not file then
-    --     return nil
-    -- end
-    -- -- Limit the number of lines to read with maxLines
-    -- for i = 1, 5 do
-    --     line = file.readLine()
-        
-    --     -- Break if we've reached the end of the file
-    --     if line == nil then
-    --         break
-    --     end
-        
-    --     -- Try to find a key-value pair (format: key = "value")
-    --     local key, value = string.match(line, '(%S+)%s*=%s*"(.-)"')
-
-    --     -- If a valid pair is found, insert it into the table
-    --     if key and value then
-    --         keyValuePairs[key] = value
-    --     end
-    -- end
-    
-    -- file.close()
-    -- return keyValuePairs
 end
 
 function util.getLatestProgramMetaData(program, data)
