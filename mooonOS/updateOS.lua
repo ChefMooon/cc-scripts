@@ -227,7 +227,7 @@ local function updateSelectedProgramInfo()
     end
     digOSProgramMetadata = updateOSUtil.getAllProgramMetaData(digOSProgram)
     local upToDateStatus = 404--updateOSUtil.compareVersions(digOSProgramMetadata.latestVersion, digOSProgramMetadata.version) -- Implement after dev period
-    wrappedDescription = mooonUtil.wrapLines(digOSProgram.description, 15) 
+    local wrappedDescription = mooonUtil.wrapLines(digOSProgram.description, 15) 
     viewHome.updateProgramDetails(digOSProgram, upToDateStatus, wrappedDescription, digOSProgramMetadata, defaultTheme)
 end
 

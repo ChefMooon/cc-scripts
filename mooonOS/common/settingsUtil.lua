@@ -30,7 +30,7 @@ end
 function settingsUtil.defineAll(settingsList)
     local settingIDs = {}
     for _, setting in ipairs(settingsList) do
-        local newSettingID = define(setting[1], setting[2], setting[3])
+        local newSettingID = settingsUtil.define(setting[1], setting[2], setting[3])
         table.insert(settingIDs, newSettingID)
     end
     return settingIDs

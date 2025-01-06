@@ -17,8 +17,8 @@ function rednetUtil.sendJobUpdate(name, message)
     os.queueEvent(name, message)
 end
 
-function rednetUtil.sendJobUpdateRequireYesNoInput(name, message)
-    local result, validResult = false
+function rednetUtil.sendJobUpdateRequireYesNoInput(name, _message)
+    local result, validResult = false, false
     os.queueEvent(name, _message)
     repeat
         local event, input = os.pullEvent(name.."_result")

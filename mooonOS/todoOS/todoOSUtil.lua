@@ -1,4 +1,4 @@
-rogramInfo = {
+ProgramInfo = {
     name = "todoOSUtil",
     version = "1.0.0",
     author = "ChefMooon"
