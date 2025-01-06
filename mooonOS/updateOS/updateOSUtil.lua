@@ -130,7 +130,7 @@ end
 
 function util.getAllProgramMetaData(program)
     local data = util.getProgramMetadata(program)
-    data = util.getLatestProgramMetaData(program, data)
+    --data = util.getLatestProgramMetaData(program, data) -- Implement after dev period
     return data
 end
 
