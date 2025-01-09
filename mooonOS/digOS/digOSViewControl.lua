@@ -35,26 +35,7 @@ local shiftRightButton
 local turnLeftButton
 local turnRightButton
 
-local inventoryControl = {
-    frame,
-    label,
-    slot1Button,
-    slot2Button,
-    slot3Button,
-    slot4Button,
-    slot5Button,
-    slot6Button,
-    slot7Button,
-    slot8Button,
-    slot9Button,
-    slot10Button,
-    slot11Button,
-    slot12Button,
-    slot13Button,
-    slot14Button,
-    slot15Button,
-    slot16Button
-}
+local inventoryControl = {}
 
 local legendFrameToggleButton, legendFrame
 

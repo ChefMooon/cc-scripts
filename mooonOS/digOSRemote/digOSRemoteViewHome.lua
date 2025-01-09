@@ -14,138 +14,25 @@ local logFrame
 local logLabel
 local logList
 
-local basicDigSettingsGUI = {
-    frame = nil,
-    programDropdownFrame = nil,
-    programDropdownLabel = nil,
-    programDropdown = nil,
-    lengthInputLabel = nil,
-    lengthInput = nil,
-    lengthSubButton = nil,
-    lengthAddButton = nil,
-    widthInputLabel = nil,
-    widthInput = nil,
-    widthSubButton = nil,
-    widthAddButton = nil,
-    heightInputLabel = nil,
-    heightInput = nil,
-    heightSubButton = nil,
-    heightAddButton = nil,
-    offsetLeftButton = nil,
-    offsetRightButton = nil,
-    torchCheckBoxLabel = nil,
-    torchCheckbox = nil,
-    chestCheckBoxLabel = nil,
-    chestCheckbox = nil,
-    rtsCheckBoxLabel = nil,
-    rtsCheckbox = nil
-}
+local basicDigSettingsGUI = {}
 
 -- might need to make these values local
 -- local buttonFrame
 
-local mainButtonFrame = {
-    buttonFrame = nil,
-    runButton = nil,
-    resetButton = nil
-}
+local mainButtonFrame = {}
 
-local legendGUI = {
-    frame = nil,
-    scrollableFrame = nil,
-    list = nil,
-    label = nil,
-    showButton = nil,
-    hideButton = nil
-}
+local legendGUI = {}
 
-local advancedDigSettingsGUI = {
-    showHideButton = nil,
-    frame = nil,
-    label = nil,
-    ignoreInventoryCheckboxFrame = nil,
-    ignoreInventoryCheckbox = nil,
-    ignoreInventoryCheckboxLabel = nil,
-    ignoreFuelCheckboxFrame = nil,
-    ignoreFuelCheckbox = nil,
-    ignoreFuelCheckboxLabel = nil,
-    noPickupCheckboxFrame = nil,
-    noPickupCheckbox = nil,
-    noPickupCheckboxLabel = nil,
-    torchSlotFrame = nil,
-    torchSlotInput = nil,
-    torchSlotLabel = nil,
-    torchSlotIncreaseButton = nil,
-    torchSlotDecreaseButton = nil,
-    torchDistanceFrame = nil,
-    torchDistanceInput = nil,
-    torchDistanceLabel = nil,
-    torchDistanceIncreaseButton = nil,
-    torchDistanceDecreaseButton = nil,
-    chestSlotFrame = nil,
-    chestSlotInput = nil,
-    chestSlotLabel = nil,
-    chestSlotIncreaseButton = nil,
-    chestSlotDecreaseButton = nil,
-}
+local advancedDigSettingsGUI = {}
 
-local advancedSettingsSelectionGUI = {
-    frame = nil,
-    presetButton = nil,
-    advancedSettingsButton = nil,
-    advancedInventoryControllerButton = nil
-}
+local advancedSettingsSelectionGUI = {}
 
-local savedGUI = {
-    frame = nil,
-    labelFrame = nil,
-    label = nil,
-    saved1Button = nil,
-    saved2Button = nil,
-    saved3Button = nil,
-    saved4Button = nil,
-    saved5Button = nil,
-    loadSavedButton = nil,
-    saveSavedButton = nil,
-    resetSavedButton = nil
-}
+local savedGUI = {}
 
-local clipboardGUI = {
-    frame = nil,
-    copyButton = nil,
-    pasteButton = nil
-}
+local clipboardGUI = {}
 
 local inventoryControllerGUI = {
-    frame = nil,
-    label = nil,
-    directionButtonFrame = nil,
-    northButton = nil,
-    eastButton = nil,
-    southButton = nil,
-    westButton = nil,
-    useButton = nil,
-    digButton = nil,
-    dropButton = nil,
-    inventorySlotSelectFrame = nil,
-    inventorySlotSelect = {
-        button1 = nil,
-        button2 = nil,
-        button3 = nil,
-        button4 = nil,
-        button5 = nil,
-        button6 = nil,
-        button7 = nil,
-        button8 = nil,
-        button9 = nil,
-        button10 = nil,
-        button11 = nil,
-        button12 = nil,
-        button13 = nil,
-        button14 = nil,
-        button15 = nil,
-        button16 = nil
-    }
+    inventorySlotSelect = {}
 }
 
 local function onClickTheme(self)
@@ -306,58 +193,10 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
             end
         end
     end)
-
-    -- local homeTitleFrame = sub[1]:addFrame():setPosition(1, 1):setSize("{parent.w}", 4)
-
--- local homeNetworkLabel = homeTitleFrame:addLabel():setText("Rednet"):setPosition(2,2)
--- local homeTurtleLabel = homeTitleFrame:addLabel():setText("ID:"):setPosition(2,3)
--- local homeNetworkID = homeTitleFrame:addInput():setPosition(5,3):setSize(3,1):setInputType("number"):setValue(initRednetID()):setInputLimit(3) -- TODO: use saved first or create a random one
-
--- local homeTurtleRefreshButton = homeTitleFrame:addButton():setText("Update"):setPosition(2,4):setSize(6,1)
---  --- INPUT START ---
---  local inputFrame = sub[1]:addFrame():setPosition(1, 7):setSize("{parent.w}", 6)
-
--- local programDropdownLabel = inputFrame:addLabel():setText("Program:"):setPosition(1, 1)
-
--- local programDropdown = inputFrame:addDropdown():setPosition(9, 1):setSize(14,1)
-
--- local lengthInputLabel = inputFrame:addLabel():setText("L:"):setPosition(1, 2)
--- local lengthInput = inputFrame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(length)
--- local lengthSubButton = inputFrame:addButton():setText("<-"):setPosition(9, 2):setSize(2, 1)
--- local lengthAddButton = inputFrame:addButton():setText("->"):setPosition(11, 2):setSize(2, 1)
-
--- local widthInputLabel = inputFrame:addLabel():setText("W:"):setPosition(1, 3)
--- local widthInput = inputFrame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(width)
--- local widthSubButton = inputFrame:addButton():setText("<-"):setPosition(9, 3):setSize(2, 1)
--- local widthAddButton = inputFrame:addButton():setText("->"):setPosition(11, 3):setSize(2, 1)
-
--- local heightInputLabel = inputFrame:addLabel():setText("H:"):setPosition(1, 4)
--- local heightInput = inputFrame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(height)
--- local heightSubButton = inputFrame:addButton():setText("<-"):setPosition(9, 4):setSize(2, 1)
--- local heightAddButton = inputFrame:addButton():setText("->"):setPosition(11, 4):setSize(2, 1)
-
--- local offsetLeftButton = inputFrame:addButton():setText("L"):setPosition(14,2):setSize(1,1):setForeground(colors.lightGray)
--- local offsetRightButton = inputFrame:addButton():setText("R"):setPosition(15,2):setSize(1,1)
-
--- local torchCheckBoxLabel = inputFrame:addLabel():setText("Torch"):setPosition(18,2):setBackground(colors.gray):setForeground(colors.black)
--- local torchCheckbox = inputFrame:addCheckbox():setPosition(17,2):setBackground(colors.black):setForeground(colors.lightGray)
-
--- local chestCheckBoxLabel = inputFrame:addLabel():setText("Chest"):setPosition(18,3):setBackground(colors.gray):setForeground(colors.black)
--- local chestCheckbox = inputFrame:addCheckbox():setPosition(17,3):setBackground(colors.black):setForeground(colors.lightGray)
-
--- local rtsCheckBoxLabel = inputFrame:addLabel():setText("RTS"):setPosition(18,4):setSize(5,1):setBackground(colors.gray):setForeground(colors.black)
--- local rtsCheckbox = inputFrame:addCheckbox():setPosition(17,4):setBackground(colors.black):setForeground(colors.lightGray)
-
--- local buttonFrame = inputFrame:addFrame():setPosition(2,6):setSize(12,1)
-
--- local runButton = buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1)
--- local resetButton = buttonFrame:addButton():setText("RESET"):setSize(5, 1):setPosition(7, 1)
 end
 
 function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(12, 6):hide()
-
-    -- advancedDigSettingsGUI.label = advancedDigSettingsGUI.frame:addLabel():setText("Adv Settings"):setPosition(1, 1)
 
     advancedDigSettingsGUI.ignoreInventoryCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.ignoreInventoryCheckbox = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
@@ -457,9 +296,6 @@ end
 function view.initSavedGUI(frame, homeUIInfo, theme)
     savedGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(11,3):setBackground(colors.gray):hide()
 
-    -- savedGUI.labelFrame = savedGUI.frame:addFrame():setPosition(1,1):setSize("{parent.w}",1):setBackground(colors.lightGray)
-    -- savedGUI.label = savedGUI.labelFrame:addLabel():setText("Presets"):setPosition(3,1)
-
     savedGUI.saved1Button = savedGUI.frame:addButton():setText("1"):setPosition(2,1):setSize(1,1):setForeground(homeUIInfo.saved1ButtonColor)
     savedGUI.saved2Button = savedGUI.frame:addButton():setText("2"):setPosition(4,1):setSize(1,1):setForeground(homeUIInfo.saved2ButtonColor)
     savedGUI.saved3Button = savedGUI.frame:addButton():setText("3"):setPosition(6,1):setSize(1,1):setForeground(homeUIInfo.saved3ButtonColor)
@@ -473,8 +309,6 @@ end
 
 function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, theme)
     inventoryControllerGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(12, 6):hide()
-
-    -- inventoryControllerGUI.label = inventoryControllerGUI.frame:addLabel():setText("Inventory"):setPosition(2, 1)
 
     inventoryControllerGUI.directionButtonFrame = inventoryControllerGUI.frame:addFrame():setPosition(2, 1):setSize(3, 3)
 
