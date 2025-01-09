@@ -1,42 +1,10 @@
 local programInfo = {
-    name = "digOSViewHome",
+    name = "digOSRemoteViewHome",
     version = "1.0.0",
     author = "ChefMooon"
 }
 
---PROGRAM TODO--
--- refactor, variables can be made into tables
-    -- log
-    -- fuel
-    -- clipboard
--- add button to reset all saved data, create a confirm toast window (maybe make the window in another class and call it from here so that it can be used in other places)
--- create a legend (maybe create a class to help with this)
-
 local digUtil = require("mooonOS/common/digUtil")
-
-local CONST = {
-    DIG_MAX = 1000,
-    DIG_MIN = 1,
-    TORCH_SPACING_MIN = 1,
-    TORCH_SPACING_MAX = 16,
-    DEFAULT_TORCH_SPACING = 7,
-    DEFAULT_TORCH_SLOT = 15,
-    DEFAULT_CHEST_SLOT = 16
-}
-
-local LEGEND = {
-    "L = Length",
-    "W = Width",
-    "H = Height",
-    "L-Click +/- 1, R-Click +/- 5",
-    "",
-    "\29 = Presets*",
-    "\4 = Advanced Settings*",
-    "\18 = Inventory Controller*",
-    " * right click to hide",
-    "",
-    "REFUEL = L-Click single, R-Click all"
-}
 
 local view = {}
 
@@ -45,13 +13,6 @@ local homeFrame
 local logFrame
 local logLabel
 local logList
-
-local homeFuelFrame
-
-local fuelLabel
-local fuelLevelLabel
-
-local fuelButton
 
 local basicDigSettingsGUI = {
     frame,
@@ -78,6 +39,15 @@ local basicDigSettingsGUI = {
     chestCheckbox,
     rtsCheckBoxLabel,
     rtsCheckbox
+}
+
+-- might need to make these values local
+-- local buttonFrame
+
+local mainButtonFrame = {
+    buttonFrame,
+    runButton,
+    resetButton
 }
 
 local legendGUI = {
@@ -203,19 +173,6 @@ local function trySlotSelect(slot)
     end
 end
 
-local function handleInventoryController(direction)
-    local selectedSlot = turtle.getSelectedSlot()
-    if direction == "north" then
-        trySlotSelect(selectedSlot - 4)
-    elseif direction == "east" then
-        trySlotSelect(selectedSlot + 1)
-    elseif direction == "south" then
-        trySlotSelect(selectedSlot + 4)
-    elseif direction == "west" then
-        trySlotSelect(selectedSlot - 1)
-    end
-end
-
 local function getInventorySlotInputValue(input)
     local value = tonumber(input:getValue())
     if value < 1 then
@@ -229,10 +186,10 @@ end
 
 local function getTorchDistanceInputValue(input)
     local value = tonumber(input:getValue())
-    if value < CONST.TORCH_SPACING_MIN then
-        return CONST.TORCH_SPACING_MIN
-    elseif value > CONST.TORCH_SPACING_MAX then
-        return CONST.TORCH_SPACING_MAX
+    if value < digUtil.CONST.TORCH_SPACING_MIN then
+        return digUtil.CONST.TORCH_SPACING_MIN
+    elseif value > digUtil.CONST.TORCH_SPACING_MAX then
+        return digUtil.CONST.TORCH_SPACING_MAX
     else
         return value
     end
@@ -248,46 +205,45 @@ local function getNumberChange(button)
     return result
 end
 
-local buttonFrame, runButton, resetButton
 
 function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
-    basicDigSettingsGUI.frame = frame:addFrame():setPosition(1, 2):setSize("{parent.w-5}", 4)
+    basicDigSettingsGUI.frame = frame:addFrame():setPosition(1, 2):setSize("{parent.w}", 4)
 
     basicDigSettingsGUI.programDropdownLabel = basicDigSettingsGUI.frame:addLabel():setText("Program:"):setPosition(1, 1)
 
-    basicDigSettingsGUI.programDropdown = basicDigSettingsGUI.frame:addDropdown():setPosition(9, 1):setSize(27,1)
+    basicDigSettingsGUI.programDropdown = basicDigSettingsGUI.frame:addDropdown():setPosition(9, 1):setSize(15,1)
 
     basicDigSettingsGUI.lengthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("L:"):setPosition(1, 2)
     basicDigSettingsGUI.lengthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.length)
     basicDigSettingsGUI.lengthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText("\16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     basicDigSettingsGUI.widthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("W:"):setPosition(1, 3)
     basicDigSettingsGUI.widthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.width)
     basicDigSettingsGUI.widthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText("\16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     basicDigSettingsGUI.heightInputLabel = basicDigSettingsGUI.frame:addLabel():setText("H:"):setPosition(1, 4)
     basicDigSettingsGUI.heightInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.height)
     basicDigSettingsGUI.heightSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText("\16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
-    basicDigSettingsGUI.offsetLeftButton = basicDigSettingsGUI.frame:addButton():setText("\171"):setPosition(14,2):setSize(1,1):setForeground(colors.lightGray)
-    basicDigSettingsGUI.offsetRightButton = basicDigSettingsGUI.frame:addButton():setText("\187"):setPosition(15,2):setSize(1,1)
+    basicDigSettingsGUI.offsetLeftButton = basicDigSettingsGUI.frame:addButton():setText("\171"):setPosition(14, 2):setSize(1, 1):setForeground(colors.lightGray)
+    basicDigSettingsGUI.offsetRightButton = basicDigSettingsGUI.frame:addButton():setText("\187"):setPosition(15, 2):setSize(1, 1)
 
-    basicDigSettingsGUI.torchCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("Torch"):setPosition(18,2):setBackground(colors.gray):setForeground(colors.black)
-    basicDigSettingsGUI.torchCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17,2):setBackground(colors.black):setForeground(colors.lightGray)
+    basicDigSettingsGUI.torchCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("Torch"):setPosition(18, 2):setBackground(colors.gray):setForeground(colors.black)
+    basicDigSettingsGUI.torchCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17, 2):setBackground(colors.black):setForeground(colors.lightGray)
 
-    basicDigSettingsGUI.chestCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("Chest"):setPosition(18,3):setBackground(colors.gray):setForeground(colors.black)
-    basicDigSettingsGUI.chestCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17,3):setBackground(colors.black):setForeground(colors.lightGray)
+    basicDigSettingsGUI.chestCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("Chest"):setPosition(18, 3):setBackground(colors.gray):setForeground(colors.black)
+    basicDigSettingsGUI.chestCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17, 3):setBackground(colors.black):setForeground(colors.lightGray)
 
-    basicDigSettingsGUI.rtsCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("RTS"):setPosition(18,4):setSize(5,1):setBackground(colors.gray):setForeground(colors.black)
-    basicDigSettingsGUI.rtsCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17,4):setBackground(colors.black):setForeground(colors.lightGray)
+    basicDigSettingsGUI.rtsCheckBoxLabel = basicDigSettingsGUI.frame:addLabel():setText("RTS"):setPosition(18, 4):setSize(5, 1):setBackground(colors.gray):setForeground(colors.black)
+    basicDigSettingsGUI.rtsCheckbox = basicDigSettingsGUI.frame:addCheckbox():setPosition(17, 4):setBackground(colors.black):setForeground(colors.lightGray)
 
     basicDigSettingsGUI.lengthSubButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local newValue = basicDigSettingsGUI.lengthInput:getValue() - getNumberChange(button)
-            if newValue >= CONST.DIG_MIN then
+            if newValue >= digUtil.CONST.DIG_MIN then
                 basicDigSettingsGUI.lengthInput:setValue(newValue)
             end
         end
@@ -295,7 +251,7 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
     basicDigSettingsGUI.lengthAddButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local newValue = basicDigSettingsGUI.lengthInput:getValue() + getNumberChange(button)
-            if newValue <= CONST.DIG_MAX then
+            if newValue <= digUtil.CONST.DIG_MAX then
                 basicDigSettingsGUI.lengthInput:setValue(newValue)
             end
         end
@@ -304,7 +260,7 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
     basicDigSettingsGUI.widthSubButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local newValue = basicDigSettingsGUI.widthInput:getValue() - getNumberChange(button)
-            if newValue >= CONST.DIG_MIN then
+            if newValue >= digUtil.CONST.DIG_MIN then
                 basicDigSettingsGUI.widthInput:setValue(newValue)
             end
         end
@@ -312,7 +268,7 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
     basicDigSettingsGUI.widthAddButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local newValue = basicDigSettingsGUI.widthInput:getValue() + getNumberChange(button)
-            if newValue <= CONST.DIG_MAX then
+            if newValue <= digUtil.CONST.DIG_MAX then
                 basicDigSettingsGUI.widthInput:setValue(newValue)
             end
         end
@@ -321,7 +277,7 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
     basicDigSettingsGUI.heightSubButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local newValue = basicDigSettingsGUI.heightInput:getValue() - getNumberChange(button)
-            if newValue >= CONST.DIG_MIN then
+            if newValue >= digUtil.CONST.DIG_MIN then
                 basicDigSettingsGUI.heightInput:setValue(newValue)
             end
         end
@@ -329,7 +285,7 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
     basicDigSettingsGUI.heightAddButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local newValue = basicDigSettingsGUI.heightInput:getValue() + getNumberChange(button)
-            if newValue <= CONST.DIG_MAX then
+            if newValue <= digUtil.CONST.DIG_MAX then
                 basicDigSettingsGUI.heightInput:setValue(newValue)
             end
         end
@@ -352,11 +308,55 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
         end
     end)
 
+    -- local homeTitleFrame = sub[1]:addFrame():setPosition(1, 1):setSize("{parent.w}", 4)
 
+-- local homeNetworkLabel = homeTitleFrame:addLabel():setText("Rednet"):setPosition(2,2)
+-- local homeTurtleLabel = homeTitleFrame:addLabel():setText("ID:"):setPosition(2,3)
+-- local homeNetworkID = homeTitleFrame:addInput():setPosition(5,3):setSize(3,1):setInputType("number"):setValue(initRednetID()):setInputLimit(3) -- TODO: use saved first or create a random one
+
+-- local homeTurtleRefreshButton = homeTitleFrame:addButton():setText("Update"):setPosition(2,4):setSize(6,1)
+--  --- INPUT START ---
+--  local inputFrame = sub[1]:addFrame():setPosition(1, 7):setSize("{parent.w}", 6)
+
+-- local programDropdownLabel = inputFrame:addLabel():setText("Program:"):setPosition(1, 1)
+
+-- local programDropdown = inputFrame:addDropdown():setPosition(9, 1):setSize(14,1)
+
+-- local lengthInputLabel = inputFrame:addLabel():setText("L:"):setPosition(1, 2)
+-- local lengthInput = inputFrame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(length)
+-- local lengthSubButton = inputFrame:addButton():setText("<-"):setPosition(9, 2):setSize(2, 1)
+-- local lengthAddButton = inputFrame:addButton():setText("->"):setPosition(11, 2):setSize(2, 1)
+
+-- local widthInputLabel = inputFrame:addLabel():setText("W:"):setPosition(1, 3)
+-- local widthInput = inputFrame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(width)
+-- local widthSubButton = inputFrame:addButton():setText("<-"):setPosition(9, 3):setSize(2, 1)
+-- local widthAddButton = inputFrame:addButton():setText("->"):setPosition(11, 3):setSize(2, 1)
+
+-- local heightInputLabel = inputFrame:addLabel():setText("H:"):setPosition(1, 4)
+-- local heightInput = inputFrame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(height)
+-- local heightSubButton = inputFrame:addButton():setText("<-"):setPosition(9, 4):setSize(2, 1)
+-- local heightAddButton = inputFrame:addButton():setText("->"):setPosition(11, 4):setSize(2, 1)
+
+-- local offsetLeftButton = inputFrame:addButton():setText("L"):setPosition(14,2):setSize(1,1):setForeground(colors.lightGray)
+-- local offsetRightButton = inputFrame:addButton():setText("R"):setPosition(15,2):setSize(1,1)
+
+-- local torchCheckBoxLabel = inputFrame:addLabel():setText("Torch"):setPosition(18,2):setBackground(colors.gray):setForeground(colors.black)
+-- local torchCheckbox = inputFrame:addCheckbox():setPosition(17,2):setBackground(colors.black):setForeground(colors.lightGray)
+
+-- local chestCheckBoxLabel = inputFrame:addLabel():setText("Chest"):setPosition(18,3):setBackground(colors.gray):setForeground(colors.black)
+-- local chestCheckbox = inputFrame:addCheckbox():setPosition(17,3):setBackground(colors.black):setForeground(colors.lightGray)
+
+-- local rtsCheckBoxLabel = inputFrame:addLabel():setText("RTS"):setPosition(18,4):setSize(5,1):setBackground(colors.gray):setForeground(colors.black)
+-- local rtsCheckbox = inputFrame:addCheckbox():setPosition(17,4):setBackground(colors.black):setForeground(colors.lightGray)
+
+-- local buttonFrame = inputFrame:addFrame():setPosition(2,6):setSize(12,1)
+
+-- local runButton = buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1)
+-- local resetButton = buttonFrame:addButton():setText("RESET"):setSize(5, 1):setPosition(7, 1)
 end
 
 function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
-    advancedDigSettingsGUI.frame = frame:addFrame():setPosition(24, 3):setSize(12, 6):hide()
+    advancedDigSettingsGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(12, 6):hide()
 
     -- advancedDigSettingsGUI.label = advancedDigSettingsGUI.frame:addLabel():setText("Adv Settings"):setPosition(1, 1)
 
@@ -393,20 +393,20 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.torchDistanceDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchDistanceInput:getValue()) - getNumberChange(button)
-            if value >= CONST.TORCH_SPACING_MIN then
+            if value >= digUtil.CONST.TORCH_SPACING_MIN then
                 advancedDigSettingsGUI.torchDistanceInput:setValue(value)
-            elseif value <= CONST.TORCH_SPACING_MIN then
-                advancedDigSettingsGUI.torchDistanceInput:setValue(CONST.TORCH_SPACING_MIN)
+            elseif value <= digUtil.CONST.TORCH_SPACING_MIN then
+                advancedDigSettingsGUI.torchDistanceInput:setValue(digUtil.CONST.TORCH_SPACING_MIN)
             end
         end
     end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
     advancedDigSettingsGUI.torchDistanceIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchDistanceInput:getValue()) + getNumberChange(button)
-            if value <= CONST.TORCH_SPACING_MAX then
+            if value <= digUtil.CONST.TORCH_SPACING_MAX then
                 advancedDigSettingsGUI.torchDistanceInput:setValue(value)
-            elseif value >= CONST.TORCH_SPACING_MAX then
-                advancedDigSettingsGUI.torchDistanceInput:setValue(CONST.TORCH_SPACING_MAX)
+            elseif value >= digUtil.CONST.TORCH_SPACING_MAX then
+                advancedDigSettingsGUI.torchDistanceInput:setValue(digUtil.CONST.TORCH_SPACING_MAX)
             end
         end
     end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
@@ -456,7 +456,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
 end
 
 function view.initSavedGUI(frame, homeUIInfo, theme)
-    savedGUI.frame = frame:addFrame():setPosition(24,3):setSize(11,3):setBackground(colors.gray):hide()
+    savedGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(11,3):setBackground(colors.gray):hide()
 
     -- savedGUI.labelFrame = savedGUI.frame:addFrame():setPosition(1,1):setSize("{parent.w}",1):setBackground(colors.lightGray)
     -- savedGUI.label = savedGUI.labelFrame:addLabel():setText("Presets"):setPosition(3,1)
@@ -473,7 +473,7 @@ function view.initSavedGUI(frame, homeUIInfo, theme)
 end
 
 function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, theme)
-    inventoryControllerGUI.frame = frame:addFrame():setPosition(24, 3):setSize(12, 6):hide()
+    inventoryControllerGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(12, 6):hide()
 
     -- inventoryControllerGUI.label = inventoryControllerGUI.frame:addLabel():setText("Inventory"):setPosition(2, 1)
 
@@ -578,39 +578,11 @@ function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, them
     end
 end
 
-function view.initLegendGUI(frame, parentFrame, theme)
-    legendGUI.showButton = frame:addButton():setText("LGD"):setPosition("{parent.w-3}", 2):setSize(3, 1)
-
-    legendGUI.frame = parentFrame:addFrame():setPosition(1, 2):setSize("{parent.w-2}", "{parent.h-3}"):hide()
-    legendGUI.hideButton = legendGUI.frame:addButton():setText("\0X"):setPosition("{parent.w-3}", 1):setSize(3, 1)
-
-    legendGUI.scrollableFrame = legendGUI.frame:addScrollableFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h}")
-
-    legendGUI.list = legendGUI.scrollableFrame:addList():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-3}"):setBackground(colors.lightGray):setSelectionColor(colors.lightGray, colors.black) -- this could be a nightmare for theme stuff
-
-    legendGUI.showButton:onClick(function(self, event, button, x, y)
-        if (event == "mouse_click") and (button == 1) then
-            legendGUI.frame:show()
-        end
-    end)
-    legendGUI.hideButton:onClick(function(self, event, button, x, y)
-        if (event == "mouse_click") and (button == 1) then
-            legendGUI.frame:hide()
-        end
-    end)
-
-    legendGUI.label = legendGUI.frame:addLabel():setText("Legend:"):setPosition(2, 1)
-
-    for i = 1, #LEGEND do
-        legendGUI.list:addItem(LEGEND[i])
-    end
-end
-
 function view.initAdvancedSettingsSelectionGUI(frame, homeUIInfo, digArgs, theme)
-    advancedSettingsSelectionGUI.presetButton = frame:addButton():setText("\29"):setPosition("{parent.w-3}", 3):setSize(3, 1)
-    advancedSettingsSelectionGUI.advancedSettingsButton = frame:addButton():setText("\4"):setPosition("{parent.w-3}", 4):setSize(3, 1)
-    advancedSettingsSelectionGUI.advancedInventoryControllerButton = frame:addButton():setText("\18"):setPosition("{parent.w-3}", 5):setSize(3, 1)
-    
+    advancedSettingsSelectionGUI.presetButton = frame:addButton():setText("\29"):setPosition("{parent.w-3}", 7):setSize(3, 1)
+    advancedSettingsSelectionGUI.advancedSettingsButton = frame:addButton():setText("\4"):setPosition("{parent.w-3}", 8):setSize(3, 1)
+    advancedSettingsSelectionGUI.advancedInventoryControllerButton = frame:addButton():setText("\18"):setPosition("{parent.w-3}", 9):setSize(3, 1)
+
     local frames = {
         preset = {
             button = advancedSettingsSelectionGUI.presetButton,
@@ -671,43 +643,29 @@ function view.initAdvancedSettingsSelectionGUI(frame, homeUIInfo, digArgs, theme
     showFrame("preset") -- todo maybe make it possible to select a favorite to show on startup
 end
 
-function view.init(frame, turtleInfo, digArgs, homeUIInfo, rednetInfo, theme)
+function view.init(frame, info, digArgs, homeUIInfo, rednetInfo, theme)
     homeFrame = frame:addFrame():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-2}")
 
-    homeInputFrame = frame:addFrame():setPosition(1, 1):setSize("{parent.w-2}", 8)
-
-    logFrame = frame:addFrame():setPosition(1, 9):setSize("{parent.w-2}", 4)
+    logFrame = frame:addFrame():setPosition(1, 14):setSize("{parent.w}", 7)
     logLabel = logFrame:addLabel():setText("Log:"):setPosition(1, 1)
-    logList = logFrame:addList():setPosition(1, 2):setSize("{parent.w}", 3)
+    logList = logFrame:addList():setPosition(1, 2):setSize("{parent.w}", 6)
 
-    homeFuelFrame = homeInputFrame:addFrame():setPosition(11, 7):setSize(11, 3)
+    view.initBasicDigSettingsGUI(homeFrame, digArgs, homeUIInfo, theme)
+    -- view.initAdvancedDigSettings(sub, digArgs, theme)
 
-    fuelLabel = homeFuelFrame:addLabel():setText("Fuel:"):setPosition(1, 1)
-    fuelLevelLabel = homeFuelFrame:addLabel():setText(tostring(turtleInfo.fuel)):setPosition(6, 1)
+    view.initAdvancedDigSettingsGUI(homeFrame, digArgs, theme)
 
-    fuelButton = homeFuelFrame:addButton():setText("REFUEL"):setSize("{parent.w-1}", 1):setPosition(1, 2)
+    view.initSavedGUI(homeFrame, homeUIInfo, theme)
 
-    view.initBasicDigSettingsGUI(homeInputFrame, digArgs, homeUIInfo, theme)
+    view.initAdvanedInventoryControllerGUI(homeFrame, homeUIInfo, digArgs, theme)
 
-    view.initAdvancedDigSettingsGUI(homeInputFrame, digArgs, theme)
+    view.initAdvancedSettingsSelectionGUI(homeFrame, homeUIInfo, digArgs, theme)
 
-    view.initSavedGUI(homeInputFrame, homeUIInfo, theme)
+    mainButtonFrame.buttonFrame = homeFrame:addFrame():setPosition(2,7):setSize(5,2)
 
-    view.initAdvanedInventoryControllerGUI(homeInputFrame, homeUIInfo, digArgs, theme)
+    mainButtonFrame.runButton = mainButtonFrame.buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    mainButtonFrame.resetButton = mainButtonFrame.buttonFrame:addButton():setText("RESET"):setSize(5, 1):setPosition(1, 2):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
-    view.initAdvancedSettingsSelectionGUI(homeInputFrame, homeUIInfo, digArgs, theme)
-
-    clipboardGUI.frame = homeInputFrame:addFrame():setPosition("{parent.w-3}",7):setSize(7,2)
-
-    clipboardGUI.copyButton = clipboardGUI.frame:addButton():setText("CPY"):setSize(3,1):setPosition(1, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    clipboardGUI.pasteButton = clipboardGUI.frame:addButton():setText("PST"):setSize(3,1):setPosition(1, 2):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-
-    buttonFrame = homeInputFrame:addFrame():setPosition(2,7):setSize(5,2)
-
-    runButton = buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    resetButton = buttonFrame:addButton():setText("RESET"):setSize(5, 1):setPosition(1, 2):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-
-    view.initLegendGUI(homeInputFrame, frame, theme)
 end
 
 function view.updateArgsUI(digArgs, theme)
@@ -777,13 +735,10 @@ function view.resetArgsUI()
     advancedDigSettingsGUI.ignoreFuelCheckbox:setValue(false)
     advancedDigSettingsGUI.noPickupCheckbox:setValue(false)
 
-    advancedDigSettingsGUI.torchSlotInput:setValue(CONST.DEFAULT_TORCH_SLOT)
-    advancedDigSettingsGUI.torchDistanceInput:setValue(CONST.DEFAULT_TORCH_SPACING)
-    advancedDigSettingsGUI.chestSlotInput:setValue(CONST.DEFAULT_CHEST_SLOT)
+    advancedDigSettingsGUI.torchSlotInput:setValue(digUtil.CONST.DEFAULT_TORCH_SLOT)
+    advancedDigSettingsGUI.torchDistanceInput:setValue(digUtil.CONST.DEFAULT_TORCH_SPACING)
+    advancedDigSettingsGUI.chestSlotInput:setValue(digUtil.CONST.DEFAULT_CHEST_SLOT)
 end
-
-
--- todo: these functions make me sick, must fix when i fix all the variables
 
 function view.getLogList()
     return {logList = logList}
@@ -817,15 +772,6 @@ function view.getBasicDigSettingsGUI()
     }
 end
 
-function view.getFuelGUI()
-    return {
-        homeFuelFrame = homeFuelFrame,
-        fuelLabel = fuelLabel,
-        fuelLevelLabel = fuelLevelLabel,
-        fuelButton = fuelButton
-    }
-end
-
 function view.getSavedDataButtons()
     return {
         saved1Button = savedGUI.saved1Button,
@@ -839,20 +785,12 @@ function view.getSavedDataButtons()
     }
 end
 
-function view.getClipboardGUI()
-    return {
-        frame = clipboardGUI.frame,
-        copyButton = clipboardGUI.copyButton,
-        pasteButton = clipboardGUI.pasteButton
-    }
-end
-
 function view.getRunButton()
-    return {runButton = runButton}
+    return {runButton = mainButtonFrame.runButton}
 end
 
 function view.getResetButton()
-    return {resetButton = resetButton}
+    return {resetButton = mainButtonFrame.resetButton}
 end
 
 function view.getDigArgs()

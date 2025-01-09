@@ -73,9 +73,9 @@ end
 
 local settingsUtil = mooonUtil.getProgram(mooonUtil.lib.common.settingsUtil.path)
 local rednetUtil = mooonUtil.getProgram(mooonUtil.lib.common.rednetUtil.path)
+local digUtil = mooonUtil.getProgram(mooonUtil.lib.common.digUtil.path)
 
 local digOSUtil = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSUtil.path)
-local digUtil = mooonUtil.getProgram(mooonUtil.lib.digOS.digUtil.path)
 
 local viewHome = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSViewHome.path)
 local viewControl = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSViewControl.path)
@@ -107,7 +107,7 @@ local turtleStats = {
 local turtleInfo = {
     id = os.getComputerID(),
     label = os.getComputerLabel(),
-    idLabel = digOSUtil.getTurtleIDLabel(),
+    idLabel = digUtil.getTurtleIDLabel(),
     fuelSlot = 1,
     fuel = 0,
     status = "",
@@ -118,7 +118,7 @@ local turtleInfo = {
 }
 
 -- Dig Args
-local digArgs = digOSUtil.createDigArgsTable("", "", 1, 1, 1, "r", false, 7, 16, false, 15, false, false, false, false, "", "")
+local digArgs = digOSUtil.createDigArgsTable("", "", 1, 1, 1, "r", false, 7, digUtil.CONST.DEFAULT_TORCH_SLOT, false, digUtil.CONST.DEFAULT_CHEST_SLOT, false, false, false, false, "", "")
 
 local log = {}
 local programs = {}
@@ -274,7 +274,6 @@ local rednetThread = sub[1]:addThread()
 local keyboardInputThread = sub[1]:addThread()
 
 local homeUIInfo = {
-    -- saved1ButtonColor = getSavedButtonColor(1),
     saved1ButtonColor = digOSUtil.getSavedButtonColor(1, currentSettings, defaultTheme),
     saved2ButtonColor = digOSUtil.getSavedButtonColor(2, currentSettings, defaultTheme),
     saved3ButtonColor = digOSUtil.getSavedButtonColor(3, currentSettings, defaultTheme),
@@ -607,7 +606,7 @@ end
 
 local function sendJobUpdateToRemote(_message)
     if rednetInfo.rednetOpen then
-        updateMessage = { "update", _message }
+        local updateMessage = { command = "update", payload = _message }
         rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
     end
 end
@@ -625,8 +624,7 @@ local function startMoveThread()
 end
 
 local function startProgram()
-    local viewDigArgs = viewHome.getDigArgsFromUI()
-    local formattedDigArgs = digOSUtil.digArgsRun(viewDigArgs)
+    local formattedDigArgs = digOSUtil.digArgsRun(digArgs)
     local testargs = digOSUtil.digArgsTableToString(formattedDigArgs)
     shell.run(testargs)
     os.sleep(1) -- allow final update to arrive
@@ -690,6 +688,19 @@ end
 
 local function tryRunDig()
     if turtleInfo.jobStatus.working == false and turtleInfo.jobStatus.moving == false then -- maybe make a method to check for all threads/jobs
+        digArgs = viewHome.getDigArgsFromUI()
+        digThread:start(runDigProgram)
+        -- sendJobUpdateToRemote("Dig Started.")
+        return true
+    else
+        addLog(log, "Turtle Busy.")
+        -- sendJobUpdateToRemote("Turtle Busy.")
+        return false
+    end
+end
+
+local function tryRemoteRunDig()
+    if turtleInfo.jobStatus.working == false and turtleInfo.jobStatus.moving == false then -- maybe make a method to check for all threads/jobs
         digThread:start(runDigProgram)
         sendJobUpdateToRemote("Dig Started.")
         return true
@@ -704,29 +715,33 @@ local function receiveCommands()
     while true do
         local id, message = rednet.receive(rednetUtil.getProtocol(rednetInfo))
         if id and message then
-            if message[1] == "info" then
+            if message.command == "info" then
                 addLog(log, "Info Request.")
-                local info = {digOSUtil.getTurtleIDLabel(), turtleInfo.fuel, turtleInfo.turtleStatus, programs}
+                local info = {turtleInfo.idLabel, turtleInfo.fuel, turtleInfo.turtleStatus, programs}
                 rednet.send(id, info, rednetUtil.getProtocol(rednetInfo))
-            elseif message[1] == "run" then
+            elseif message.command == "run" then
                 addLog(log, "Remote Dig command recieved.")
                 rednetInfo.remoteID = id
-                digArgs.program = message[2]
-                digArgs.length = tonumber(message[3]) or 0
-                digArgs.width = tonumber(message[4]) or 0
-                digArgs.height = tonumber(message[5]) or 0
-                digArgs.offsetDir = message[6]
-                digArgs.torch = message[7]
-                digArgs.chest = message[8]
-                digArgs.rts = message[9]
-                tryRunDig()
-            elseif message[1] == "move" then
+                digArgs = message
+                tryRemoteRunDig()
+            elseif message.command == "move" then
                 addLog(log, "Remote Move command recieved.")
-                moveAmount = tonumber(message[2]) --reset back to ui number?
-                moveCommand = message[3]
-                moveDig = message[4]
-                startMoveThread()
-                moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
+                -- TODO implement remote movements
+                -- moveAmount = tonumber(message.moveAmount) --reset back to ui number?
+                -- moveCommand = message.moveCommand
+                -- moveDig = message.moveDig
+                -- startMoveThread()
+                -- moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
+
+                -- OLD STUFF
+            --     addLog(log, "Remote Move command recieved.")
+            --     moveAmount = tonumber(message[2]) --reset back to ui number?
+            --     moveCommand = message[3]
+            --     moveDig = message[4]
+            --     startMoveThread()
+            --     moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
+            else
+                addLog(log, "Invalid Command Recieved.")
             end
         end
 
@@ -811,23 +826,18 @@ end)
 local function clipboard(_function)
     if rednetInfo.rednetOpen then
         if _function == "copy" then
-            local copyArgs = {
-                "digOS-" .. digArgs.program .. ".lua",
-                tostring(digArgs.length), tostring(digArgs.width), tostring(digArgs.height),
-                tostring(digArgs.offsetDir), tostring(digArgs.torch.torch), tostring(digArgs.chest.chest), tostring(digArgs.rts) }
-            local copyMessage = { "clipboard", "copy", table.concat(copyArgs, " ")}
-            rednet.broadcast(copyMessage, "digOS_update"..rednetInfo.rednetID)
+            digArgs = viewHome.getDigArgsFromUI()
+            digArgs.command = "clipboard_copy"
+            rednet.broadcast(digArgs, "digOS_update"..rednetInfo.rednetID)
             addLog(log, "Clipboard: Copy")
         elseif _function == "paste" then
-            local pasteMessage = { "clipboard", "paste" }
-            rednet.broadcast(pasteMessage, "digOS_update"..rednetInfo.rednetID)
+            rednet.broadcast({ command = "clipboard_paste"}, "digOS_update"..rednetInfo.rednetID)
             -- get response and set ui
             local id, info = rednet.receive("digOS_clipboard_paste_info", 3)
-            -- info format: _program, _length, _width, _height, _offsetDir, _torch, _chest, _rts
             if info then
-                if info ~= "" then 
-                    pasteInfo = digOSUtil.splitString(info)
-                    updateArgsUI(pasteInfo[1], pasteInfo[2], pasteInfo[3], pasteInfo[4], pasteInfo[5], pasteInfo[6], pasteInfo[7], pasteInfo[8])
+                if info.program ~= "" then
+                    digArgs = info
+                    viewHome.updateArgsUI(digArgs, defaultTheme)
                     addLog(log, "Clipboard: Paste Success")
                 else
                     addLog(log, "Clipboard: No Save Data")
