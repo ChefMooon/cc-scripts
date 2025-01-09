@@ -39,7 +39,7 @@ end
 local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
 local basalt = mooonUtil.getBasalt(mooonUtil.lib.base.basalt.path)
 
-for _, program in pairs(mooonUtil.lib.digOS) do
+for _, program in pairs(mooonUtil.lib.digOSRemote) do
     if not (fs.exists(program.path)) then
         mooonUtil.downloadFile(program.url, program.path)
     end
