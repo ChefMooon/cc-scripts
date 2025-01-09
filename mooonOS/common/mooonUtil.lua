@@ -48,6 +48,12 @@ mooonOSUtil.lib = {
             path = "mooonOS/common/basaltUtil.lua",
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/basaltUtil.lua",
             description = "Basalt utility library"
+        },
+        digUtil = {
+            filename = "digUtil",
+            path = "mooonOS/common/digUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/digUtil.lua",
+            description = "Common dig utility library"
         }
     },
     main = {
@@ -126,12 +132,26 @@ mooonOSUtil.lib = {
             path = "mooonOS/digOS/digOSUtil.lua",
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSUtil.lua",
             description = "Base utility library for digOS"
+        }
+    },
+    digOSRemote = {
+        digOSRemoteViewHome = {
+            filename = "digOSRemoteViewHome",
+            path = "mooonOS/digOSRemote/digOSRemoteViewHome.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOSRemote/digOSRemoteViewHome.lua",
+            description = "Home view for digOSRemote"
         },
-        digUtil = {
-            filename = "digUtil",
-            path = "mooonOS/common/digUtil.lua",
-            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/common/digUtil.lua",
-            description = "Common dig utility library"
+        digOSRemoteViewControl = {
+            filename = "digOSRemoteViewControl",
+            path = "mooonOS/digOSRemote/digOSRemoteViewControl.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOSRemote/digOSRemoteViewControl.lua",
+            description = "Control view for digOSRemote"
+        },
+        digOSRemoteViewSettings = {
+            filename = "digOSRemoteViewSettings",
+            path = "mooonOS/digOSRemote/digOSRemoteViewSettings.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOSRemote/digOSRemoteViewSettings.lua",
+            description = "Settings view for digOSRemote"
         }
     },
     todoOS = {
