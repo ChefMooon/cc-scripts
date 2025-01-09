@@ -15,137 +15,136 @@ local logLabel
 local logList
 
 local basicDigSettingsGUI = {
-    frame,
-    programDropdownFrame,
-    programDropdownLabel,
-    programDropdown,
-    lengthInputLabel,
-    lengthInput,
-    lengthSubButton,
-    lengthAddButton,
-    widthInputLabel,
-    widthInput,
-    widthSubButton,
-    widthAddButton,
-    heightInputLabel,
-    heightInput,
-    heightSubButton,
-    heightAddButton,
-    offsetLeftButton,
-    offsetRightButton,
-    torchCheckBoxLabel,
-    torchCheckbox,
-    chestCheckBoxLabel,
-    chestCheckbox,
-    rtsCheckBoxLabel,
-    rtsCheckbox
+    frame = nil,
+    programDropdownFrame = nil,
+    programDropdownLabel = nil,
+    programDropdown = nil,
+    lengthInputLabel = nil,
+    lengthInput = nil,
+    lengthSubButton = nil,
+    lengthAddButton = nil,
+    widthInputLabel = nil,
+    widthInput = nil,
+    widthSubButton = nil,
+    widthAddButton = nil,
+    heightInputLabel = nil,
+    heightInput = nil,
+    heightSubButton = nil,
+    heightAddButton = nil,
+    offsetLeftButton = nil,
+    offsetRightButton = nil,
+    torchCheckBoxLabel = nil,
+    torchCheckbox = nil,
+    chestCheckBoxLabel = nil,
+    chestCheckbox = nil,
+    rtsCheckBoxLabel = nil,
+    rtsCheckbox = nil
 }
 
 -- might need to make these values local
 -- local buttonFrame
 
 local mainButtonFrame = {
-    buttonFrame,
-    runButton,
-    resetButton
+    buttonFrame = nil,
+    runButton = nil,
+    resetButton = nil
 }
 
 local legendGUI = {
-    frame,
-    scrollableFrame,
-    list,
-    label,
-    showButton,
-    hideButton,
-    list
+    frame = nil,
+    scrollableFrame = nil,
+    list = nil,
+    label = nil,
+    showButton = nil,
+    hideButton = nil
 }
 
 local advancedDigSettingsGUI = {
-    showHideButton,
-    frame,
-    label,
-    ignoreInventoryCheckboxFrame,
-    ignoreInventoryCheckbox,
-    ignoreInventoryCheckboxLabel,
-    ignoreFuelCheckboxFrame,
-    ignoreFuelCheckbox,
-    ignoreFuelCheckboxLabel,
-    noPickupCheckboxFrame,
-    noPickupCheckbox,
-    noPickupCheckboxLabel,
-    torchSlotFrame,
-    torchSlotInput,
-    torchSlotLabel,
-    torchSlotIncreaseButton,
-    torchSlotDecreaseButton,
-    torchDistanceFrame,
-    torchDistanceInput,
-    torchDistanceLabel,
-    torchDistanceIncreaseButton,
-    torchDistanceDecreaseButton,
-    chestSlotFrame,
-    chestSlotInput,
-    chestSlotLabel,
-    chestSlotIncreaseButton,
-    chestSlotDecreaseButton,
+    showHideButton = nil,
+    frame = nil,
+    label = nil,
+    ignoreInventoryCheckboxFrame = nil,
+    ignoreInventoryCheckbox = nil,
+    ignoreInventoryCheckboxLabel = nil,
+    ignoreFuelCheckboxFrame = nil,
+    ignoreFuelCheckbox = nil,
+    ignoreFuelCheckboxLabel = nil,
+    noPickupCheckboxFrame = nil,
+    noPickupCheckbox = nil,
+    noPickupCheckboxLabel = nil,
+    torchSlotFrame = nil,
+    torchSlotInput = nil,
+    torchSlotLabel = nil,
+    torchSlotIncreaseButton = nil,
+    torchSlotDecreaseButton = nil,
+    torchDistanceFrame = nil,
+    torchDistanceInput = nil,
+    torchDistanceLabel = nil,
+    torchDistanceIncreaseButton = nil,
+    torchDistanceDecreaseButton = nil,
+    chestSlotFrame = nil,
+    chestSlotInput = nil,
+    chestSlotLabel = nil,
+    chestSlotIncreaseButton = nil,
+    chestSlotDecreaseButton = nil,
 }
 
 local advancedSettingsSelectionGUI = {
-    frame,
-    presetButton,
-    advancedSettingsButton,
-    advancedInventoryControllerButton
+    frame = nil,
+    presetButton = nil,
+    advancedSettingsButton = nil,
+    advancedInventoryControllerButton = nil
 }
 
 local savedGUI = {
-    frame,
-    labelFrame,
-    label,
-    saved1Button,
-    saved2Button,
-    saved3Button,
-    saved4Button,
-    saved5Button,
-    loadSavedButton,
-    saveSavedButton,
-    resetSavedButton
+    frame = nil,
+    labelFrame = nil,
+    label = nil,
+    saved1Button = nil,
+    saved2Button = nil,
+    saved3Button = nil,
+    saved4Button = nil,
+    saved5Button = nil,
+    loadSavedButton = nil,
+    saveSavedButton = nil,
+    resetSavedButton = nil
 }
 
 local clipboardGUI = {
-    frame,
-    copyButton,
-    pasteButton
+    frame = nil,
+    copyButton = nil,
+    pasteButton = nil
 }
 
 local inventoryControllerGUI = {
-    frame,
-    label,
-    directionButtonFrame,
-    northButton,
-    eastButton,
-    southButton,
-    westButton,
-    useButton,
-    digButton,
-    dropButton,
-    inventorySlotSelectFrame,
+    frame = nil,
+    label = nil,
+    directionButtonFrame = nil,
+    northButton = nil,
+    eastButton = nil,
+    southButton = nil,
+    westButton = nil,
+    useButton = nil,
+    digButton = nil,
+    dropButton = nil,
+    inventorySlotSelectFrame = nil,
     inventorySlotSelect = {
-        button1,
-        button2,
-        button3,
-        button4,
-        button5,
-        button6,
-        button7,
-        button8,
-        button9,
-        button10,
-        button11,
-        button12,
-        button13,
-        button14,
-        button15,
-        button16
+        button1 = nil,
+        button2 = nil,
+        button3 = nil,
+        button4 = nil,
+        button5 = nil,
+        button6 = nil,
+        button7 = nil,
+        button8 = nil,
+        button9 = nil,
+        button10 = nil,
+        button11 = nil,
+        button12 = nil,
+        button13 = nil,
+        button14 = nil,
+        button15 = nil,
+        button16 = nil
     }
 }
 
@@ -746,7 +745,7 @@ end
 
 function view.getBasicDigSettingsGUI()
     return {
-        frame = frame,
+        frame = basicDigSettingsGUI.frame,
         programDropdownLabel = basicDigSettingsGUI.programDropdownLabel,
         programDropdown = basicDigSettingsGUI.programDropdown,
         lengthInputLabel = basicDigSettingsGUI.lengthInputLabel,

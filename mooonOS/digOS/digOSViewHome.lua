@@ -12,7 +12,7 @@ local programInfo = {
 -- add button to reset all saved data, create a confirm toast window (maybe make the window in another class and call it from here so that it can be used in other places)
 -- create a legend (maybe create a class to help with this)
 
-local digUtil = require("mooonOS/common/digUtil")
+local digOSUtil = require("mooonOS/digOS/digOSUtil")
 
 local CONST = {
     DIG_MAX = 1000,
@@ -739,7 +739,7 @@ function view.updateArgsUI(digArgs, theme)
 end
 
 function view.getDigArgsFromUI()
-    return digUtil.createDigArgsTable(
+    return digOSUtil.createDigArgsTable(
         basicDigSettingsGUI.programDropdown:getItem(basicDigSettingsGUI.programDropdown:getItemIndex()).text,
         "",
         tonumber(basicDigSettingsGUI.lengthInput:getValue()),
@@ -772,7 +772,7 @@ function view.resetArgsUI()
     basicDigSettingsGUI.torchCheckbox:setValue(false)
     basicDigSettingsGUI.chestCheckbox:setValue(false)
     basicDigSettingsGUI.rtsCheckbox:setValue(false)
-
+    
     advancedDigSettingsGUI.ignoreInventoryCheckbox:setValue(false)
     advancedDigSettingsGUI.ignoreFuelCheckbox:setValue(false)
     advancedDigSettingsGUI.noPickupCheckbox:setValue(false)
