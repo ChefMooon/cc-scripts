@@ -127,7 +127,7 @@ mooonOSUtil.lib = {
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSViewInfo.lua",
             description = "Info view for digOS"
         },
-        digOSUtil = {
+        digOSUtil = { -- Duplicate in digOSRemote
             filename = "digOSUtil",
             path = "mooonOS/digOS/digOSUtil.lua",
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSUtil.lua",
@@ -152,6 +152,12 @@ mooonOSUtil.lib = {
             path = "mooonOS/digOSRemote/digOSRemoteViewSettings.lua",
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOSRemote/digOSRemoteViewSettings.lua",
             description = "Settings view for digOSRemote"
+        },
+        digOSUtil = { -- Duplicate in digOS
+            filename = "digOSUtil",
+            path = "mooonOS/digOS/digOSUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOS/digOSUtil.lua",
+            description = "Base utility library for digOS"
         }
     },
     todoOS = {
