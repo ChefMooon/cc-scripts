@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.1",
+    version = "2.0.2",
     author = "ChefMooon"
 }
 
@@ -117,20 +117,20 @@ local turtleInfo = {
     }
 }
 
+local history = {
+    lastUpdateMessage = {
+        data = {}
+    }
+}
+
 -- Dig Args
-local digArgs = digOSUtil.createDigArgsTable("", "", 1, 1, 1, "r", false, 7, digUtil.CONST.DEFAULT_TORCH_SLOT, false, digUtil.CONST.DEFAULT_CHEST_SLOT, false, false, false, false, "", "")
+local digArgs = digOSUtil.createDigArgsTable("", "", 1, 1, 1, "r", false, digUtil.CONST.DEFAULT_TORCH_SPACING, digUtil.CONST.DEFAULT_TORCH_SLOT, false, digUtil.CONST.DEFAULT_CHEST_SLOT, false, false, false, false, "", "")
 
 local log = {}
 local programs = {}
 
 -- Saved Data Options
 local savedSelection = 0
-
--- Move Options
-local moveCommand = ""
-local moveAmount = 1
-local moveDig = false
-
 -- Rednet Info
 local rednetInfo = {
     programName = programName,
@@ -153,8 +153,23 @@ local PROG_SETTINGS = {
     saved2 = settingsUtil.define(programName, "saved2", ""),
     saved3 = settingsUtil.define(programName, "saved3", ""),
     saved4 = settingsUtil.define(programName, "saved4", ""),
-    saved5 = settingsUtil.define(programName, "saved5", "")
+    saved5 = settingsUtil.define(programName, "saved5", ""),
+    moveCommand = settingsUtil.define(programName, "moveCommand", ""),
+    moveAmount = settingsUtil.define(programName, "moveAmount", 1),
+    moveDig = settingsUtil.define(programName, "moveDig", false)
 }
+
+-- local TURTLE_INFO = {
+--     id = settingsUtil.define(programName, "id", os.getComputerID()),
+--     label = settingsUtil.define(programName, "label", os.getComputerLabel()),
+--     fuelSlot = settingsUtil.define(programName, "fuelSlot", 1),
+--     fuel = settingsUtil.define(programName, "fuel", 0),
+--     status = settingsUtil.define(programName, "status", ""),
+--     jobStatus = {
+--         working = settingsUtil.define(programName, "jobStatus.working", false),
+--         moving = settingsUtil.define(programName, "jobStatus.moving", false)
+--     }
+-- }
 
 settings.load()
 
@@ -271,6 +286,7 @@ local programLabel = menubarInfoFrame:addLabel():setText("digOS"):setPosition(3,
 
 local digThread = sub[1]:addThread()
 local rednetThread = sub[1]:addThread()
+local informationThread = sub[1]:addThread()
 local keyboardInputThread = sub[1]:addThread()
 
 local homeUIInfo = {
@@ -363,6 +379,9 @@ local function updateLog()
 end
 
 local function addLog(log, newLog)
+    if (type(newLog) == "number") then
+        newLog = tostring(newLog)
+    end
     local wrappedLog = wrapLog(newLog)
     for i = #wrappedLog, 1, -1 do
         table.insert(log, 1, wrappedLog[i])
@@ -572,42 +591,61 @@ viewHome.getSavedDataButtons().resetSavedButton:onClick(function(self, event, bu
     end
 end)
 
+local function sendJobUpdateToRemote(_message)
+    if rednetInfo.rednetOpen then
+        local updateMessage = {
+            command = "update",
+            data = {}
+        }
+        if _message == nil then
+            updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(history.lastUpdateMessage.data, turtleInfo)
+        elseif type(_message) == "table" then
+            history.lastUpdateMessage.data = _message
+            updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(_message, turtleInfo)
+        else
+            updateMessage.payload = _message
+        end
+        rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
+    end
+end
+
 local function runDigOSMove()
+    local distance = settingsUtil.get(PROG_SETTINGS.moveAmount)
+    local command = settingsUtil.get(PROG_SETTINGS.moveCommand)
+    local dig = settingsUtil.get(PROG_SETTINGS.moveDig)
     addLog(log, "Move Thread Started.")
     turtleInfo.jobStatus.moving = true
-    if moveCommand == "forward" then
-        digUtil.forward(moveAmount, moveDig)
-    elseif moveCommand == "up" then
-        digUtil.up(moveAmount, moveDig)
-    elseif moveCommand == "down" then
-        digUtil.down(moveAmount, moveDig)
-    elseif moveCommand == "back" then
-        digUtil.back(moveAmount, moveDig)
-    elseif moveCommand == "turn_left" then
-        -- turtle.turnLeft()
-        digUtil.left(moveAmount)
-    elseif moveCommand == "turn_right" then
-        -- turtle.turnRight()
-        digUtil.right(moveAmount)
-    elseif moveCommand == "shift_left" then
+    if command == "forward" then
+        digUtil.forward(distance, dig)
+    elseif command == "up" then
+        digUtil.up(distance, dig)
+    elseif command == "down" then
+        digUtil.down(distance, dig)
+    elseif command == "back" then
+        digUtil.back(distance, dig)
+    elseif command == "turn_left" then
+        digUtil.left(distance)
+    elseif command == "turn_left_once" then
         turtle.turnLeft()
-        digUtil.forward(moveAmount, moveDig)
+    elseif command == "turn_right" then
+        digUtil.right(distance)
+    elseif command == "turn_right_once" then
         turtle.turnRight()
-    elseif moveCommand == "shift_right" then
+    elseif command == "shift_left" then
+        turtle.turnLeft()
+        digUtil.forward(distance, dig)
         turtle.turnRight()
-        digUtil.forward(moveAmount, moveDig)
+    elseif command == "shift_right" then
+        turtle.turnRight()
+        digUtil.forward(distance, dig)
         turtle.turnLeft()
     end
-    moveCommand = ""
+    settingsUtil.set(PROG_SETTINGS.moveCommand, "")
     moveThread:stop()
     turtleInfo.jobStatus.moving = false
     addLog(log, "Move Thread Stopped.")
-end
-
-local function sendJobUpdateToRemote(_message)
     if rednetInfo.rednetOpen then
-        local updateMessage = { command = "update", payload = _message }
-        rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
+        sendJobUpdateToRemote("Move Completed.")
     end
 end
 
@@ -623,32 +661,41 @@ local function startMoveThread()
     end
 end
 
+local function getRemoteTimeEstimate()
+    local formattedDigArgs = digOSUtil.digArgsRun(digArgs)
+    formattedDigArgs.command = "time"
+    local testargs = digOSUtil.digArgsTableToString(formattedDigArgs)
+    shell.run(testargs)
+end
+
+local function getRemoteTorchEstimate()
+    local formattedDigArgs = digOSUtil.digArgsRun(digArgs)
+    formattedDigArgs.command = "torch"
+    local testargs = digOSUtil.digArgsTableToString(formattedDigArgs)
+    shell.run(testargs)
+end
+
+local function getTimeEstimate()
+    digArgs = viewHome.getDigArgsFromUI()
+    local formattedDigArgs = digOSUtil.digArgsRun(digArgs)
+    formattedDigArgs.command = "time"
+    local testargs = digOSUtil.digArgsTableToString(formattedDigArgs)
+    shell.run(testargs)
+end
+
+local function getTorchEstimate()
+    digArgs = viewHome.getDigArgsFromUI()
+    local formattedDigArgs = digOSUtil.digArgsRun(digArgs)
+    formattedDigArgs.command = "torch"
+    local testargs = digOSUtil.digArgsTableToString(formattedDigArgs)
+    shell.run(testargs)
+end
+
 local function startProgram()
     local formattedDigArgs = digOSUtil.digArgsRun(digArgs)
     local testargs = digOSUtil.digArgsTableToString(formattedDigArgs)
     shell.run(testargs)
     os.sleep(1) -- allow final update to arrive
-end
-
--- Maybe seperate function for non log updates? (fuel?)
-local function listenForUpdates()
-    while true do
-        local event, updates = os.pullEvent("digOS_job_update")
-        local newLog = ""
-        if updates[1] ~= nil and type(updates[1]) == "string" then
-            newLog = updates[1]
-        else
-            newLog = "WARN: Invalid Update"
-        end
-        if rednetInfo.rednetOpen then
-            rednet.send(rednetInfo.remoteID, updates, "digOS_job_update")
-        end
-        addLog(log, newLog)
-
-        if updates[2] ~= nil and type(updates[2]) == "number" and turtleInfo.fuel ~= updates[2] then
-            updateFuelLabel(updates[2])
-        end
-    end
 end
 
 local function listenForInputs()
@@ -680,9 +727,10 @@ end
 local function runDigProgram()
     addLog(log, "Dig Thread Started.")
     turtleInfo.jobStatus.working = true
-    parallel.waitForAny(startProgram, listenForUpdates, listenForInputs)
+    parallel.waitForAny(startProgram, listenForInputs)
     digThread:stop()
     turtleInfo.jobStatus.working = false
+    sendJobUpdateToRemote()
     addLog(log, "Dig Thread Stopped")
 end
 
@@ -690,7 +738,6 @@ local function tryRunDig()
     if turtleInfo.jobStatus.working == false and turtleInfo.jobStatus.moving == false then -- maybe make a method to check for all threads/jobs
         digArgs = viewHome.getDigArgsFromUI()
         digThread:start(runDigProgram)
-        -- sendJobUpdateToRemote("Dig Started.")
         return true
     else
         addLog(log, "Turtle Busy.")
@@ -711,6 +758,51 @@ local function tryRemoteRunDig()
     end
 end
 
+local function listenForUpdates()
+    while true do
+        local event, updates = os.pullEvent("digOS_job_update")
+        local newLog = ""
+        -- if updates[1] ~= nil and type(updates[1]) == "string" then
+        if (type(updates) == "table") then
+            turtleInfo.fuel = updates.turtleFuel
+            newLog = updates.message
+        elseif (type(updates) == "string") then
+            addLog(log, updates)
+        else
+            newLog = "WARN: Invalid Update"
+        end
+        if rednetInfo.rednetOpen then
+            sendJobUpdateToRemote(updates)
+        end
+
+        if updates.turtleFuel ~= nil and type(updates.turtleFuel) == "number" and turtleInfo.fuel ~= updates.turtleFuel then
+            updateFuelLabel(updates.turtleFuel)
+        end
+    end
+end
+
+local function informationHandler()
+    while true do
+        local id, message = rednet.receive(rednetUtil.getProtocol(rednetInfo).."_info")
+        if id and message then
+            if message.command == "info" then
+                addLog(log, "Info Request.")
+                local info = {turtleInfo.idLabel, turtleInfo.fuel, turtleInfo.turtleStatus, programs}
+                rednet.send(id, info, rednetUtil.getProtocol(rednetInfo))
+            elseif message.command == "digOSRemote_startup_info" then
+                addLog(log, "Remote Startup Info Request.")
+                sendJobUpdateToRemote()
+            else
+                addLog(log, "Invalid Info Recieved.")
+            end
+        end
+    end
+end
+
+local function startInformationThread()
+    parallel.waitForAny(informationHandler, listenForUpdates)
+end
+
 local function receiveCommands()
     while true do
         local id, message = rednet.receive(rednetUtil.getProtocol(rednetInfo))
@@ -727,19 +819,18 @@ local function receiveCommands()
             elseif message.command == "move" then
                 addLog(log, "Remote Move command recieved.")
                 -- TODO implement remote movements
-                -- moveAmount = tonumber(message.moveAmount) --reset back to ui number?
-                -- moveCommand = message.moveCommand
-                -- moveDig = message.moveDig
-                -- startMoveThread()
-                -- moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
-
-                -- OLD STUFF
-            --     addLog(log, "Remote Move command recieved.")
-            --     moveAmount = tonumber(message[2]) --reset back to ui number?
-            --     moveCommand = message[3]
-            --     moveDig = message[4]
-            --     startMoveThread()
-            --     moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
+                settingsUtil.set(PROG_SETTINGS.moveAmount, message.moveAmount)
+                settingsUtil.set(PROG_SETTINGS.moveCommand, message.moveCommand)
+                settingsUtil.set(PROG_SETTINGS.moveDig, message.moveDig)
+                startMoveThread()
+            elseif message.command == "time" then
+                addLog(log, "Remote Time request recieved.")
+                digArgs = message
+                getRemoteTimeEstimate()
+            elseif message.command == "torch" then
+                addLog(log, "Remote Torch request recieved.")
+                digArgs = message
+                getRemoteTorchEstimate()
             else
                 addLog(log, "Invalid Command Recieved.")
             end
@@ -766,6 +857,7 @@ local function stopRednet()
         setRednetStatus(rednetInfo.rednetOpen)
         rednet.close()
         rednetThread:stop()
+        informationThread:stop()
         addLog(log, "Rednet Closed")
     end
 end
@@ -783,6 +875,7 @@ local function startRednet()
         settingsUtil.set(PROG_SETTINGS.rednetID, viewSettings.get().homeNetworkID:getValue())
         addLog(log, "Rednet Opened. ID: "..rednetInfo.rednetID)
         rednetThread:start(receiveCommands)
+        informationThread:start(startInformationThread)
     end
 end
 
@@ -790,6 +883,7 @@ local function startupRednet()
     rednetInfo.modem = peripheral.find("modem", rednet.open)
     addLog(log, "Rednet Opened. ID: "..rednetInfo.rednetID)
     rednetThread:start(receiveCommands)
+    informationThread:start(startInformationThread)
 end
 
 local function toggleRednet()
@@ -893,6 +987,18 @@ viewHome.getResetButton().resetButton:onClick(function(self, event, button, x, y
     end
 end)
 
+viewHome.get().timeEstimateButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        getTimeEstimate()
+    end
+end)
+
+viewHome.get().torchEstimateButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        getTorchEstimate()
+    end
+end)
+
 --- HOME MENU START END ---
 
 ----- MOVE MENU START -----
@@ -910,102 +1016,106 @@ viewControl.getMoveButtons().moveAmountResetButton:onClick(function(self, event,
     if (event == "mouse_click") and (button == 1) then
         viewControl.getMoveButtons().moveAmountInput:setValue("1")
         viewControl.getMoveButtons().digCheckbox:setValue(false)
-        moveCommand = ""
-        moveAmount = 1
-        moveDig = false
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "")
+        settingsUtil.set(PROG_SETTINGS.moveAmount, 1)
+        settingsUtil.set(PROG_SETTINGS.moveDig, false)
     end
 end)
 
 local function setMoveAmount(_value)
     if _value <= 1000 and _value >= 1 then
-        moveAmount = _value
+        settingsUtil.set(PROG_SETTINGS.moveAmount, _value)
         viewControl.getMoveButtons().moveAmountInput:setValue(_value)
     end
 end
 
-viewControl.getMoveButtons().moveAmountAdd5Button:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        setMoveAmount(moveAmount + 5)
+viewControl.getMoveButtons().moveAmountAddButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 1)
+        elseif (button == 2) then
+            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 5)
+        end
     end
 end)
 
-viewControl.getMoveButtons().moveAmountAdd1Button:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        setMoveAmount(moveAmount + 1)
-    end
-end)
-
-viewControl.getMoveButtons().moveAmountSub1Button:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        setMoveAmount(moveAmount - 1)
-    end
-end)
-
-viewControl.getMoveButtons().moveAmountSub5Button:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        setMoveAmount(moveAmount - 5)
+viewControl.getMoveButtons().moveAmountSubButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 1)
+        elseif (button == 2) then
+            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 5)
+        end
     end
 end)
 
 local function doMove()
     moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
+    settingsUtil.set(PROG_SETTINGS.moveAmount, moveAmount)
     addLog(log, moveAmount)
     startMoveThread()
 end
 
 viewControl.getMoveButtons().forwardButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        moveCommand = "forward"
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "forward")
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().backwardButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        moveCommand = "back"
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "back")
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().upButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        moveCommand = "up"
-        addLog(log, "up")
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "up")
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().downButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        moveCommand = "down"
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "down")
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().shiftLeftButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        moveCommand = "shift_left"
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left")
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().shiftRightButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        moveCommand = "shift_right"
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right")
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().turnLeftButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "turn_left"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_left")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_left_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().turnRightButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "turn_right"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_right")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_right_once")
+        end
         doMove()
     end
 end)

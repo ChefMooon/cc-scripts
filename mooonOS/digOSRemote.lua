@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSRemote",
-    version = "2.0.0",
+    version = "2.0.1",
     author = "ChefMooon"
 }
 
@@ -58,7 +58,8 @@ local digUtil = mooonUtil.getProgram(mooonUtil.lib.common.digUtil.path)
 local digOSUtil = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSUtil.path)
 
 local viewHome = mooonUtil.getProgram(mooonUtil.lib.digOSRemote.digOSRemoteViewHome.path)
--- local viewControl = mooonUtil.getProgram(mooonUtil.lib.digOSRemote.digOSRemoteViewControl.path)
+local viewControl = mooonUtil.getProgram(mooonUtil.lib.digOSRemote.digOSRemoteViewControl.path)
+local viewInfo = mooonUtil.getProgram(mooonUtil.lib.digOSRemote.digOSRemoteViewInfo.path)
 local viewSettings = mooonUtil.getProgram(mooonUtil.lib.digOSRemote.digOSRemoteViewSettings.path)
 
 ----- REQUIRE END -----
@@ -105,7 +106,7 @@ local length, width, height = 1, 1, 1
 local offsetDir = "r"
 local torch, chest, rts = false, false, false
 
-local digArgs = digUtil.createDigArgsTable("", "", 1, 1, 1, "r", false, 7, 16, false, 15, false, false, false, false, "", "")
+local digArgs = digUtil.createDigArgsTable("", "", 1, 1, 1, "r", false, digUtil.CONST.DEFAULT_TORCH_SPACING, digUtil.CONST.DEFAULT_TORCH_SLOT, false, digUtil.CONST.DEFAULT_CHEST_SLOT, false, false, false, false, "", "")
 
 local log = {}
 local programs = { "clear-mid-out" }
@@ -134,6 +135,8 @@ local rednetInfo = {
     remoteID = 0,
     rednetStatus = nil
 }
+
+local connectedTurtleInfo = {}
 
 -- SETTINGS --
 
@@ -192,12 +195,25 @@ local function initRednetID()
 end
 
 local function setRednetStatus(_status)
-        if _status then
-            settingsUtil.set(PROG_SETTINGS.rednetStatus, 1)
-        else
-            settingsUtil.set(PROG_SETTINGS.rednetStatus, 0)
-        end
+    if _status then
+        settingsUtil.set(PROG_SETTINGS.rednetStatus, 1)
+    else
+        settingsUtil.set(PROG_SETTINGS.rednetStatus, 0)
     end
+end
+
+local function initConnectedTurtleInfo()
+    rednet.broadcast({ command = "digOSRemote_startup_info" }, rednetUtil.getProtocol(rednetInfo).."_info")
+end
+
+-- local function updateConnectedTurtles()
+--     connectedTurtleInfo = settingsUtil.get(PROG_SETTINGS.connectedTurtleInfo)
+-- end
+
+local function addConnectedTurtleInfo(_id, _info)
+    connectedTurtleInfo[_id] = _info
+    -- settingsUtil.set(PROG_SETTINGS.connectedTurtleInfo, connectedTurtleInfo)
+end
 
 -- PGROGRAMS END --
 
@@ -209,14 +225,21 @@ end
 
 local main = basalt.createFrame():setTheme({ FrameBG = colors.lightGray, FrameFG = colors.black })
 
-local sub = {
-    main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"),
-    main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"):hide(),
-    main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"):hide(),
-    main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"):hide(),
-}
+-- local sub = {
+--     main:addFrame():setPosition(1, 3):setSize("{parent.w}", "{parent.h - 2}"),
+--     main:addFrame():setPosition(1, 3):setSize("{parent.w}", "{parent.h - 2}"):hide(),
+--     main:addFrame():setPosition(1, 3):setSize("{parent.w}", "{parent.h - 2}"):hide(),
+--     main:addFrame():setPosition(1, 3):setSize("{parent.w}", "{parent.h - 2}"):hide(),
+-- }
 
-local sendThread = sub[1]:addThread()
+local sub = {}
+sub["Home"] = main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}")
+sub["Move"] = main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"):hide()
+sub["Info"] = main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"):hide()
+
+sub["Adv"] = main:addFrame():setPosition(1, 2):setSize("{parent.w}", "{parent.h - 1}"):hide()
+
+local sendThread = sub["Home"]:addThread()
 
 local function openSubFrame(id)
     if (sub[id] ~= nil) then
@@ -227,14 +250,23 @@ local function openSubFrame(id)
     end
 end
 
-local menubar = main:addMenubar():setScrollable()
+local menubar = main:addMenubar()
     :setSize("{parent.w-8}", 1)
     :onSelect(function(self, event, item)
-        openSubFrame(self:getItemIndex())
+        openSubFrame(self:getItem(self:getItemIndex()).text)
     end)
     :addItem("Home")
     :addItem("Move")
+    :addItem("Info")
     :addItem("Adv")
+
+-- local menubar2 = main:addMenubar()
+--     :setPosition(1, 2)
+--     :setSize("{parent.w-1}", 1)
+--         :onSelect(function(self, event, item)
+--             openSubFrame(self:getItem(self:getItemIndex()).text)
+--         end)
+--         :addItem("Adv")
 
 local menubarInfoFrame = main:addFrame():setPosition("{parent.w-7}", 1):setSize(7,1):setBackground(colors.gray)
 
@@ -243,7 +275,7 @@ local menubarRednetStatusButton = menubarInfoFrame:addButton():setText(""):setPo
 local programLabel = menubarInfoFrame:addLabel():setText(programInfo.name):setPosition(3, 1):setForeground(colors.yellow)
 
 --local rednetThread = sub[1]:addThread()
-local updateThread = sub[1]:addThread()
+local updateThread = sub["Home"]:addThread()
 
 ---------- **** FRONTEND START **** ----------
 ----- HOME MENU START (frontend) -----
@@ -256,7 +288,7 @@ local homeUIInfo = {
     saved5ButtonColor = digOSUtil.getSavedButtonColor(5, currentSettings, defaultTheme)
 }
 
-viewHome.init(sub[1], info, digArgs, homeUIInfo, rednetInfo, defaultTheme)
+viewHome.init(sub["Home"], info, digArgs, homeUIInfo, rednetInfo, defaultTheme)
 
 ----- HOME MENU END (frontend) -----
 
@@ -311,6 +343,9 @@ local function updateLog()
 end
 
 local function addLog(log, newLog)
+    if (type(newLog) == "number") then
+        newLog = tostring(newLog)
+    end
     local wrappedLog = wrapLog(newLog)
     for i = #wrappedLog, 1, -1 do
         table.insert(log, 1, wrappedLog[i])
@@ -335,39 +370,19 @@ end
 
 --- MOVE START ---
 
--- TODO implement move view
--- local moveInputFrame = sub[2]:addFrame():setPosition(1, 2):setSize("{parent.w}", 15)
-
--- local moveOptionFrame = moveInputFrame:addFrame():setPosition(2, 9):setSize(5, 1):setBackground(colors.gray):setForeground(colors.black)
--- local digCheckBoxLabel = moveOptionFrame:addLabel():setText("Dig"):setPosition(3, 1)
--- local digCheckbox = moveOptionFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
-
--- local moveAmountResetButton = moveInputFrame:addButton():setText("RESET"):setPosition(17,9):setSize(5,1)
-
--- local moveAmountInput = moveInputFrame:addInput():setPosition(10, 7):setSize(4, 1):setInputType("number"):setInputLimit(4):setValue("1")
-
--- local moveAmountResetButton = moveInputFrame:addButton():setText("RESET"):setPosition(34,7):setSize(5,1)
-
--- local moveAmountSub5Button = moveInputFrame:addButton():setText("-5"):setPosition(4, 7):setSize(2, 1)
--- local moveAmountSub1Button = moveInputFrame:addButton():setText("-1"):setPosition(7, 7):setSize(2, 1)
--- local moveAmountAdd1Button = moveInputFrame:addButton():setText("+1"):setPosition(15, 7):setSize(2, 1)
--- local moveAmountAdd5Button = moveInputFrame:addButton():setText("+5"):setPosition(18, 7):setSize(2, 1)
-
--- local forwardButton = moveInputFrame:addButton():setText("Fwd"):setPosition(9, 1):setSize(6, 1)
--- local backwardButton = moveInputFrame:addButton():setText("Back"):setPosition(9, 5):setSize(6, 1)
--- local upButton = moveInputFrame:addButton():setText("Up"):setPosition(16, 5):setSize(6, 1)
--- local downButton = moveInputFrame:addButton():setText("Down"):setPosition(2, 5):setSize(6, 1)
--- local turnLeftButton = moveInputFrame:addButton():setText("Left"):setPosition(2, 3):setSize(6, 1)
--- local turnRightButton = moveInputFrame:addButton():setText("Right"):setPosition(16, 3):setSize(6, 1)
-
--- local shiftLeftButton = moveInputFrame:addButton():setText("Shift-L"):setPosition(2, 11):setSize(7, 1)
--- local shiftRightButton = moveInputFrame:addButton():setText("Shift-R"):setPosition(10, 11):setSize(7, 1)
+viewControl.init(sub["Move"], defaultTheme)
 
 --- MOVE END ---
- 
+
+--- INFO START ---
+
+viewInfo.init(sub["Info"], computerInfo, rednetInfo, defaultTheme)
+
+--- INFO END ---
+
 --- SETTINGS START ---
 
-viewSettings.init(sub[3], computerInfo, rednetInfo, defaultTheme)
+viewSettings.init(sub["Adv"], computerInfo, rednetInfo, defaultTheme)
 
 --- SETTINGS END ---
 
@@ -554,29 +569,29 @@ viewHome.getSavedDataButtons().resetSavedButton:onClick(function(self, event, bu
     end
 end)
 
+local function sendGetTimeEsitmateCommand()
+    local message = viewHome.getDigArgsFromUI()
+    message.command = "time"
+    rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
+    addLog(log, "Time request Sent.")
+end
+
+local function sendGetTorchEsitmateCommand()
+    local message = viewHome.getDigArgsFromUI()
+    message.command = "torch"
+    rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
+    addLog(log, "Torch request Sent.")
+end
+
 local function sendCommand()
     local message = viewHome.getDigArgsFromUI()
     message.command = "run"
     rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
     addLog(log, "Command Sent.")
-    os.sleep(1) -- allow final update to arrive
-end
-
-local function listenForUpdates()
-    while true do
-        local event, update = os.pullEvent("digOS_job_update")
-        local newLog = ""
-        if type(update) == "string" then
-            newLog = update
-        else
-            newLog = "WARN: Invalid Update"
-        end
-        addLog(log, newLog)
-    end
 end
 
 local function sendDigProgram()
-    parallel.waitForAny(sendCommand, listenForUpdates)
+    parallel.waitForAny(sendCommand)
     sendThread:stop()
 end
 
@@ -591,8 +606,20 @@ viewHome.getResetButton().resetButton:onClick(function(self, event, button, x, y
         viewHome.resetArgsUI()
         sendThread:stop()
     end
-    
 end)
+
+viewHome.get().timeEstimateButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        sendGetTimeEsitmateCommand()
+    end
+end)
+
+viewHome.get().torchEstimateButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        sendGetTorchEsitmateCommand()
+    end
+end)
+
 --- INPUT FRAME END ---
 --- 
 --- Idea make a seperate screen to edit clipboard data
@@ -609,11 +636,16 @@ local function clipboardPaste(_id)
     addLog(log, "Clipboard: Info Requested")
 end
 
-local function runUpdateThread()
+local function initUpdateThread()
     while true do
         local id, update = rednet.receive("digOS_update"..rednetInfo.rednetID)
         if update.command == "update" then
-            addLog(log, update.payload)
+            if update.payload then
+                addLog(log, update.payload)
+            elseif update.data then
+                connectedTurtleInfo[id] = update.data
+                viewInfo.updateConectedTurtleInfoGUI(connectedTurtleInfo, defaultTheme)
+            end
         elseif update.command == "clipboard_copy" then
             clipboardCopy(update)
         elseif update.command == "clipboard_paste" then
@@ -626,7 +658,7 @@ local function runUpdateThread()
 end
 
 local function startUpdateThread()
-    updateThread:start(runUpdateThread)
+    updateThread:start(initUpdateThread)
     addLog(log, "Update Thread Started.")
 end
 
@@ -664,6 +696,7 @@ end
 local function startupRednet()
     rednetInfo.modem = peripheral.find("modem", rednet.open)
     addLog(log, "Rednet Opened. ID: "..rednetInfo.rednetID)
+    initConnectedTurtleInfo()
     --rednetThread:start()
     startUpdateThread()
 end
@@ -686,14 +719,15 @@ end)
 --- MOVE START (Backend) ---
 
 local function sendMoveCommand()
-    local message = { "move", moveAmount, moveCommand, moveDig }
-    rednet.broadcast(message, getProtocol())
+    local message = { command = "move", moveAmount = moveAmount, moveCommand = moveCommand, moveDig = moveDig }
+    rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
+    addLog(log, tostring(moveAmount))
     addLog(log, "move command sent")
     os.sleep(1) -- allow final update to arrive
 end
 
 local function doMoveCommand()
-    parallel.waitForAny(sendMoveCommand, listenForUpdates)
+    parallel.waitForAny(sendMoveCommand)
     sendThread:stop()
 end
 
@@ -701,122 +735,116 @@ local function doMove()
     sendThread:start(doMoveCommand)
 end
 
--- local function digCheckboxChange(self)
---     local checked = self:getValue()
---     if checked then
---         moveDig = false
---     else
---         moveDig = true
---     end
--- end
--- digCheckbox:onChange(digCheckboxChange)
+local function digCheckboxChange(self)
+    if self:getValue() then
+        moveDig = false
+    else
+        moveDig = true
+    end
+end
+viewControl.getMoveButtons().digCheckbox:onChange(digCheckboxChange)
 
--- moveAmountResetButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveAmountInput:setValue("1")
---         digCheckbox:setValue(false)
---         moveCommand = ""
---         moveAmount = 1
---         moveDig = false
---     end
--- end)
+viewControl.getMoveButtons().moveAmountResetButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        viewControl.getMoveButtons().moveAmountInput:setValue("1")
+        viewControl.getMoveButtons().digCheckbox:setValue(false)
+        moveCommand = ""
+        moveAmount = 1
+        moveDig = false
+    end
+end)
 
--- local function setMoveAmount(_value)
---     moveAmount = _value
---     moveAmountInput:setValue(_value)
--- end
+local function setMoveAmount(_value)
+    if _value <= 1000 and _value >= 1 then
+        moveAmount = _value
+        viewControl.getMoveButtons().moveAmountInput:setValue(_value)
+    end
+end
 
--- moveAmountAdd5Button:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         local newValue = moveAmount + 5
---         if newValue <= 1000 then
---             setMoveAmount(newValue)
---         end
---     end
--- end)
+viewControl.getMoveButtons().moveAmountAddButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            setMoveAmount(moveAmount + 1)
+        elseif (button == 2) then
+            setMoveAmount(moveAmount + 5)
+        end
+    end
+end)
 
--- moveAmountAdd1Button:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         local newValue = moveAmount + 1
---         if newValue <= 1000 then
---             setMoveAmount(newValue)
---         end
---     end
--- end)
+viewControl.getMoveButtons().moveAmountSubButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            setMoveAmount(moveAmount - 1)
+        elseif (button == 2) then
+            setMoveAmount(moveAmount - 5)
+        end
+    end
+end)
 
--- moveAmountSub1Button:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         local newValue = moveAmount - 1
---         if newValue >= 1 then
---             setMoveAmount(newValue)
---         end
---     end
--- end)
+viewControl.getMoveButtons().forwardButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        moveCommand = "forward"
+        doMove()
+    end
+end)
 
--- moveAmountSub5Button:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         local newValue = moveAmount - 5
---         if newValue >= 1 then
---             setMoveAmount(newValue)
---         end
---     end
--- end)
+viewControl.getMoveButtons().backwardButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        moveCommand = "back"
+        doMove()
+    end
+end)
 
--- forwardButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "forward"
---         doMove()
---     end
--- end)
+viewControl.getMoveButtons().upButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        moveCommand = "up"
+        addLog(log, "up")
+        doMove()
+    end
+end)
 
--- backwardButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "back"
---         doMove()
---     end
--- end)
+viewControl.getMoveButtons().downButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        moveCommand = "down"
+        doMove()
+    end
+end)
 
--- upButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "up"
---         doMove()
---     end
--- end)
+viewControl.getMoveButtons().shiftLeftButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        moveCommand = "shift_left"
+        doMove()
+    end
+end)
 
--- downButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "down"
---         doMove()
---     end
--- end)
+viewControl.getMoveButtons().shiftRightButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        moveCommand = "shift_right"
+        doMove()
+    end
+end)
 
--- shiftLeftButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "shift_left"
---         doMove()
---     end
--- end)
+viewControl.getMoveButtons().turnLeftButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            moveCommand = "turn_left"
+        elseif (button == 2) then
+            moveCommand = "turn_left_once"
+        end
+        doMove()
+    end
+end)
 
--- shiftRightButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "shift_right"
---         doMove()
---     end
--- end)
-
--- turnLeftButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "turn_left"
---         doMove()
---     end
--- end)
-
--- turnRightButton:onClick(function(self, event, button, x, y)
---     if (event == "mouse_click") and (button == 1) then
---         moveCommand = "turn_right"
---         doMove()
---     end
--- end)
+viewControl.getMoveButtons().turnRightButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            moveCommand = "turn_right"
+        elseif (button == 2) then
+            moveCommand = "turn_right_once"
+        end
+        doMove()
+    end
+end)
 
 --- MOVE END (Backend) ---
 

@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS-clear-mid-out",
-    version = "1.1.0",
+    version = "1.1.1",
     author = "ChefMooon"
 }
 
@@ -24,9 +24,10 @@ local blocksMined = 0
 local turtleFuel = 0
 local turtleFuelSlot = 1
 local turtleOptimalFuel = 100
+local jobStartTime = os.time("local")
+local jobStartTimeEpoch = 0
 
 local torchPlaced = false
--- local torchSpacing = 7 -- TODO: torch spacing variable based on arg
 
 local inventoryStatus = nil
 local availableInventorySlots = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
@@ -58,27 +59,43 @@ local errorInfo = {
 }
 
 local function getErrorMessage()
-    message = ""
-    if errors <= 5 then
-        local messageID = math.random(1, #errorMessages)
+    local message = ""
+    if errorInfo.total <= 5 then
+        local messageID = math.random(1, #errorInfo.basic)
         message = errorInfo.basic[messageID]
     else
-        local messageID = math.random(1, #errorMessagesExtra)
-        message = erorInfo.advanced[messageID]
+        local messageID = math.random(1, #errorInfo.advanced)
+        message = errorInfo.advanced[messageID]
     end
     errorInfo.total = errorInfo.total + 1
     return message
 end
 
+local function getElapsedTime()
+    local currentTime = os.epoch("local")
+    local elapsedMillis = currentTime - jobStartTimeEpoch
+    local elapsedSeconds = math.floor(elapsedMillis / 1000)
+
+    local hours = math.floor(elapsedSeconds / 3600)
+    local minutes = math.floor((elapsedSeconds % 3600) / 60)
+    local seconds = elapsedSeconds % 60
+
+    return string.format("%02d:%02d:%02d", hours, minutes, seconds)
+end
+
 local function sendJobUpdate(_message)
-    rednetUtil.sendJobUpdate("digOS_job_update", { _message, turtleFuel })   
+    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+end
+
+local function sendSimpleJobUpdate(_message)
+    rednetUtil.sendJobUpdate("digOS_job_update", _message)
 end
 
 local function sendJobInput(_message)
     -- sendJobUpdate("try")
     -- rednetUtil.sendJobUpdateRequireYesNoInput("digOS_job_input", _message)
 
-    local result, validResult = false
+    local result, validResult = false, false
     os.queueEvent("digOS_job_input", _message)
     repeat
         local event, input = os.pullEvent("digOS_job_input_result")
@@ -96,6 +113,36 @@ local function sendJobInput(_message)
         os.queueEvent("digOS_job_input_valid", validResult)
     until validResult == true
     return result
+end
+
+local function getTimeEstimate(_args)
+    local turnTime, moveTime = 0.5, 1
+    local lengthTime, timePerRow, heightTime = 0, 0, 0
+    if _args.length > 0 then
+        lengthTime = (_args.length * moveTime)
+    end
+    if _args.rts == "true" then
+        lengthTime = lengthTime * 2
+    end
+    if _args.width == 2 then
+        timePerRow = turnTime * 2
+    elseif _args.width == 3 then
+        timePerRow = turnTime * 4
+    elseif _args.width >= 4 then
+        timePerRow = turnTime * 4
+        timePerRow = moveTime * (_args.width - 3)
+    end
+    if _args.height > 1 then
+        heightTime = moveTime * (_args.height * 2)
+    end
+    local total = heightTime + lengthTime + (timePerRow * _args.height) + (timePerRow * _args.length)
+    local minutes = math.floor(total / 60)
+    local seconds = total % 60
+    if minutes > 0 then
+        return string.format("%d:%ds", minutes, seconds)
+    else
+        return string.format("%ds", seconds)
+    end
 end
 
 local function addAvailableInventorySlot(_slot)
@@ -236,8 +283,13 @@ local function zPosReset()
 end
 
 local function halfSpin()
-    turtle.turnRight()
-    turtle.turnRight()
+    if math.random() < 0.5 then
+        turtle.turnLeft()
+        turtle.turnLeft()
+    else
+        turtle.turnRight()
+        turtle.turnRight()
+    end
 end
 
 local function updateTurtleFuel()
@@ -538,7 +590,73 @@ local function digLayerPattern1(direction, length, width, height, offsetDir)
     return mined
 end
 
-local function digPattern1(length, width, height, offsetDir, torch, chest, rts)
+local function isFirstTorchLayer(layer)
+    return layer == 2
+end
+
+local function isRegularTorchLayer(layer, torchDistance)
+    return layer > 2 and (layer - 2) % (torchDistance + 1) == 0
+end
+
+local function needsFinalTorch(layer, length, torchDistance)
+    if length < 2 then
+        return false
+    end
+    return layer == length and (length - 2) % (torchDistance + 1) >= 5
+end
+
+local function getTorchEstimate(_args)
+    local torchCount = 0
+
+    if (_args.torch.torch == "true") then
+        if (_args.length >= 2) then
+            torchCount = torchCount + 1
+        end
+
+        local regularTorches = math.ceil((_args.length - 2) / (_args.torch.distance + 1))
+        if (regularTorches > 0) then
+            torchCount = torchCount + regularTorches
+        end
+
+        if needsFinalTorch(_args.length, _args.length, _args.torch.distance) then
+            torchCount = torchCount + 1
+        end
+    end
+
+    return torchCount
+end
+
+local function tryPlaceTorch(length, layers, torchDistance)
+    local ok, err = true, ""
+    if isFirstTorchLayer(layers) or isRegularTorchLayer(layers, torchDistance) or needsFinalTorch(layers, length, torchDistance) then
+        local initSlot = turtle.getSelectedSlot()
+        turtle.select(digArgs.torch.slot)
+        local item = turtle.getItemDetail()
+        if item then
+            if item.name then
+                for j = 1, #validTorchNames do
+                    if item.name == validTorchNames[j] then
+                        if zPos > 0 then
+                            repeat
+                                moveDown()
+                            until zPos == 0
+                        end
+                        halfSpin()
+                        ok, err = turtle.place()
+                        if ok and torchPlaced == false then
+                            torchPlaced = true
+                        end
+                        halfSpin()
+                    end
+                end
+            end
+        end
+        turtle.select(initSlot)
+    end
+    return ok, err
+end
+
+local function initDig(length, width, height, offsetDir, torch, chest, rts)
     local mined = 0
     local ok, err = true, ""
     for i = 1, length do
@@ -549,30 +667,8 @@ local function digPattern1(length, width, height, offsetDir, torch, chest, rts)
         end
         layersMined = layersMined + 1
         updateTurtleFuel()
-        if digArgs.torch.torch == "true" and (layersMined > 1 and (layersMined-1) % digArgs.torch.distance == 1) then
-            local initSlot = turtle.getSelectedSlot()
-            turtle.select(digArgs.torch.slot)
-            local item = turtle.getItemDetail()
-            if item then
-                if item.name then
-                    for i = 1, #validTorchNames do
-                        if item.name == validTorchNames[i] then
-                            if zPos > 0 then
-                                repeat
-                                    moveDown()
-                                until zPos == 0
-                            end
-                            halfSpin()
-                            local ok, err = turtle.place()
-                            if ok and torchPlaced == false then
-                                torchPlaced = true
-                            end
-                            halfSpin()
-                        end
-                    end
-                end
-            end
-            turtle.select(initSlot)
+        if torch == "true" then
+            ok, err = tryPlaceTorch(length, layersMined, digArgs.torch.distance)
         end
         if digArgs.chest.chest == "true" then
             ok, err = checkInventoryAndEmpty()
@@ -591,7 +687,7 @@ local function digPattern1(length, width, height, offsetDir, torch, chest, rts)
     if rts == "true" then
         returnToStart()
     end
-    if digArgs.chest.chest == "true" then
+    if chest == "true" then
         ok, err = endEmptyInventory()
         if not ok then
             return ok, err
@@ -608,6 +704,9 @@ if digArgs.chest.chest == "true" then
     removeAvailableInventorySlot(digArgs.chest.slot)
 end
 
+
+
+--- Main Loop Start ---
 if digArgs.command == "run" then
     turtleFuel = turtle.getFuelLevel()
     while true do
@@ -617,8 +716,10 @@ if digArgs.command == "run" then
             end
         end
         if startFuelCheck() then
-            sendJobUpdate("Job Started...")
-            local ok, err = digPattern1(digArgs.length, digArgs.width, digArgs.height, digArgs.offsetDir, digArgs.torch.torch, digArgs.chest.chest, digArgs.rts)
+            jobStartTime = os.time("local")
+            jobStartTimeEpoch = os.epoch("local")
+            sendJobUpdate("Job Started... Time: ".. getTimeEstimate(digArgs))
+            local ok, err = initDig(digArgs.length, digArgs.width, digArgs.height, digArgs.offsetDir, digArgs.torch.torch, digArgs.chest.chest, digArgs.rts)
             if ok then
                 sendJobUpdate("Job Complete. "..tostring(blocksMined).." Blocks Mined.")
             else
@@ -640,4 +741,8 @@ if digArgs.command == "run" then
             end
         end
     end
+elseif digArgs.command == "time" then
+    sendSimpleJobUpdate("Estimated Time: "..getTimeEstimate(digArgs))
+elseif digArgs.command == "torch" then
+    sendSimpleJobUpdate("Estimated Torches: "..getTorchEstimate(digArgs))
 end

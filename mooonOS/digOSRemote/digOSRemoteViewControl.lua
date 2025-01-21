@@ -1,6 +1,6 @@
 local programInfo = {
-    name = "digOSViewMove",
-    version = "1.0.1",
+    name = "digOSRemoteViewControl",
+    version = "1.0.0",
     author = "ChefMooon"
 }
 
@@ -39,7 +39,7 @@ local legendFrameToggleButton, legendFrame
 
 
 function view.initInventoryControl(frame)
-    inventoryControl.frame = frame:addFrame():setPosition(27, 2):setSize(15, "{parent.h-5}")
+    inventoryControl.frame = frame:addFrame():setPosition(2, 12):setSize(15, "{parent.h-5}")
     inventoryControl.label = inventoryControl.frame:addLabel():setText("Inventory"):setPosition(2, 1)
 
     inventoryControl.slot1Button = inventoryControl.frame:addButton():setText("1"):setPosition(1, 3):setSize(3, 1)
@@ -168,7 +168,7 @@ function view.init(frame, theme)
     turnLeftButton = moveInputFrame:addButton():setText("\17"):setPosition(2, 4):setSize(3, 1)
     turnRightButton = moveInputFrame:addButton():setText("\16"):setPosition(10, 4):setSize(3, 1)
 
-    view.initInventoryControl(frame)
+    -- view.initInventoryControl(frame) -- TODO: review how this will work. is it needed?
 
     legendFrameToggleButton = frame:addButton():setText("Legend"):setPosition("{parent.w-7}", "{parent.h-2}"):setSize(6, 1)
 
@@ -178,12 +178,12 @@ function view.init(frame, theme)
             if legendFrame:isVisible() then
                 legendFrame:hide()
                 moveInputFrame:show()
-                inventoryControl.frame:show()
+                -- inventoryControl.frame:show()
                 legendFrameToggleButton:setForeground(colors.black)
             else
                 legendFrame:show()
                 moveInputFrame:hide()
-                inventoryControl.frame:hide()
+                -- inventoryControl.frame:hide()
                 legendFrameToggleButton:setForeground(colors.yellow)
             end
         end
@@ -195,10 +195,10 @@ function view.init(frame, theme)
     local legendBackwardButtonLabel = legendFrame:addLabel():setText("\31 = Backward"):setPosition(3, 4)
     local legendTurnLeftButtonLabel = legendFrame:addLabel():setText("\17 = Turn Left"):setPosition(3, 5)
     local legendTurnRightButtonLabel = legendFrame:addLabel():setText("\16 = Turn Right"):setPosition(3, 6)
-    local legendUpButtonLabel = legendFrame:addLabel():setText("\24 = Up"):setPosition(20, 3)
-    local legendDownButtonLabel = legendFrame:addLabel():setText("\25 = Down"):setPosition(20, 4)
-    local legendShiftLeftButtonLabel = legendFrame:addLabel():setText("\171 = Shift Left"):setPosition(20, 5)
-    local legendShiftRightButtonLabel = legendFrame:addLabel():setText("\187 = Shift Right"):setPosition(20, 6)
+    local legendUpButtonLabel = legendFrame:addLabel():setText("\24 = Up"):setPosition(3, 7)
+    local legendDownButtonLabel = legendFrame:addLabel():setText("\25 = Down"):setPosition(3, 8)
+    local legendShiftLeftButtonLabel = legendFrame:addLabel():setText("\171 = Shift Left"):setPosition(3, 9)
+    local legendShiftRightButtonLabel = legendFrame:addLabel():setText("\187 = Shift Right"):setPosition(3, 10)
 end
 
 function view.getButtons()

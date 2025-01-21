@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digUtil",
-    version = "1.0.0",
+    version = "1.0.1",
     author = "ChefMooon"
 }
 
@@ -16,8 +16,8 @@ digUtil.CONST = {
     TORCH_SPACING_MIN = 1,
     TORCH_SPACING_MAX = 16,
     DEFAULT_TORCH_SPACING = 7,
-    DEFAULT_TORCH_SLOT = 15,
-    DEFAULT_CHEST_SLOT = 16
+    DEFAULT_TORCH_SLOT = 16,
+    DEFAULT_CHEST_SLOT = 15
 }
 
 function digUtil.forward(count, dig)
@@ -34,7 +34,19 @@ function digUtil.forward(count, dig)
                 end
             end
         end
-        moveSuccess, moveError = turtle.forward()
+
+        local attempts = 0
+        repeat
+            local has_block, data = turtle.inspect()
+            if has_block and data.name == "computercraft:turtle_advanced" then
+                if attempts < 19 then
+                    sleep(0.5)
+                end
+            end
+            moveSuccess, moveError = turtle.forward()
+            attempts = attempts + 1
+        until moveSuccess or attempts >= 20
+
         if not moveSuccess then break end
         moveCount = moveCount + 1
     end
