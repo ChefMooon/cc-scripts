@@ -147,6 +147,12 @@ mooonOSUtil.lib = {
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOSRemote/digOSRemoteViewControl.lua",
             description = "Control view for digOSRemote"
         },
+        digOSRemoteViewInfo = {
+            filename = "digOSRemoteViewInfo",
+            path = "mooonOS/digOSRemote/digOSRemoteViewInfo.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/digOSRemote/digOSRemoteViewInfo.lua",
+            description = "Info view for digOSRemote"
+        },
         digOSRemoteViewSettings = {
             filename = "digOSRemoteViewSettings",
             path = "mooonOS/digOSRemote/digOSRemoteViewSettings.lua",
