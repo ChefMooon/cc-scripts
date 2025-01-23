@@ -19,7 +19,11 @@ local basicDigSettingsGUI = {}
 -- might need to make these values local
 -- local buttonFrame
 
+local components = {}
+
 local mainButtonFrame = {}
+
+local optionFrame1 = {}
 
 local legendGUI = {}
 
@@ -198,35 +202,26 @@ end
 function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(12, 6):hide()
 
-    advancedDigSettingsGUI.ignoreInventoryCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
-    advancedDigSettingsGUI.ignoreInventoryCheckbox = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
-    advancedDigSettingsGUI.ignoreInventoryCheckboxLabel = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addLabel():setText("\120Inv"):setPosition(2, 1)
-
-    advancedDigSettingsGUI.ignoreFuelCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(7, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
-    advancedDigSettingsGUI.ignoreFuelCheckbox = advancedDigSettingsGUI.ignoreFuelCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
-    advancedDigSettingsGUI.ignoreFuelCheckboxLabel = advancedDigSettingsGUI.ignoreFuelCheckboxFrame:addLabel():setText("\120Fuel"):setPosition(2, 1)
-
-    advancedDigSettingsGUI.noPickupCheckboxFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 2):setSize("{parent.w-1}", 1):setBackground(colors.gray)
-    advancedDigSettingsGUI.noPickupCheckbox = advancedDigSettingsGUI.noPickupCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
-    advancedDigSettingsGUI.noPickupCheckboxLabel = advancedDigSettingsGUI.noPickupCheckboxFrame:addLabel():setText("Drop All"):setPosition(3, 1)
-
-    advancedDigSettingsGUI.torchDistanceFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 3):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.torchDistanceFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 1):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.torchDistanceInput = advancedDigSettingsGUI.torchDistanceFrame:addInput():setPosition(1, 1):setSize(4, 1):setInputType("number"):setInputLimit(2):setValue(digArgs.torch.distance)
     advancedDigSettingsGUI.torchDistanceDecreaseButton = advancedDigSettingsGUI.torchDistanceFrame:addButton():setText("\17"):setPosition(5, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchDistanceIncreaseButton = advancedDigSettingsGUI.torchDistanceFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchDistanceLabel = advancedDigSettingsGUI.torchDistanceFrame:addLabel():setText("TSpace"):setPosition(7, 1)
 
-    advancedDigSettingsGUI.torchSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 4):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.torchSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 2):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.torchSlotInput = advancedDigSettingsGUI.torchSlotFrame:addInput():setPosition(1, 1):setSize(4, 1):setInputType("number"):setInputLimit(2):setValue(digArgs.torch.slot)
     advancedDigSettingsGUI.torchSlotDecreaseButton = advancedDigSettingsGUI.torchSlotFrame:addButton():setText("\17"):setPosition(5, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchSlotIncreaseButton = advancedDigSettingsGUI.torchSlotFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
     advancedDigSettingsGUI.torchSlotLabel = advancedDigSettingsGUI.torchSlotFrame:addLabel():setText("TSlot"):setPosition(7, 1)
 
-    advancedDigSettingsGUI.chestSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 5):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.chestSlotFrame = advancedDigSettingsGUI.frame:addFrame():setPosition(1, 3):setSize("{parent.w-1}", 1):setBackground(colors.gray)
     advancedDigSettingsGUI.chestSlotInput = advancedDigSettingsGUI.chestSlotFrame:addInput():setPosition(1, 1):setSize(4, 1):setInputType("number"):setInputLimit(2):setValue(digArgs.chest.slot)
     advancedDigSettingsGUI.chestSlotDecreaseButton = advancedDigSettingsGUI.chestSlotFrame:addButton():setText("\17"):setPosition(5, 1):setSize(1, 1)
     advancedDigSettingsGUI.chestSlotIncreaseButton = advancedDigSettingsGUI.chestSlotFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
     advancedDigSettingsGUI.chestSlotLabel = advancedDigSettingsGUI.chestSlotFrame:addLabel():setText("CSlot"):setPosition(7, 1)
+
+    components.timeEstimateButton = advancedDigSettingsGUI.frame:addButton():setText("TIME"):setSize(4, 1):setPosition(1, 5):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    components.torchEstimateButton = advancedDigSettingsGUI.frame:addButton():setText("TORCH"):setSize(5, 1):setPosition(6, 5):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     advancedDigSettingsGUI.torchDistanceDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
@@ -294,7 +289,23 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
 end
 
 function view.initSavedGUI(frame, homeUIInfo, theme)
-    savedGUI.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(11,3):setBackground(colors.gray):hide()
+    optionFrame1.frame = frame:addFrame():setPosition("{parent.w-16}", 7):setSize(12,6):hide()
+
+    optionFrame1.advancedDigSettingsFrame = optionFrame1.frame:addFrame():setPosition(1, 1):setSize(12,2):setBackground(colors.gray)
+
+    advancedDigSettingsGUI.ignoreInventoryCheckboxFrame = optionFrame1.advancedDigSettingsFrame:addFrame():setPosition(1, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.ignoreInventoryCheckbox = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
+    advancedDigSettingsGUI.ignoreInventoryCheckboxLabel = advancedDigSettingsGUI.ignoreInventoryCheckboxFrame:addLabel():setText("\120Inv"):setPosition(2, 1)
+
+    advancedDigSettingsGUI.ignoreFuelCheckboxFrame = optionFrame1.advancedDigSettingsFrame:addFrame():setPosition(7, 1):setSize("{parent.w-1/2}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.ignoreFuelCheckbox = advancedDigSettingsGUI.ignoreFuelCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
+    advancedDigSettingsGUI.ignoreFuelCheckboxLabel = advancedDigSettingsGUI.ignoreFuelCheckboxFrame:addLabel():setText("\120Fuel"):setPosition(2, 1)
+
+    advancedDigSettingsGUI.noPickupCheckboxFrame = optionFrame1.advancedDigSettingsFrame:addFrame():setPosition(1, 2):setSize("{parent.w-1}", 1):setBackground(colors.gray)
+    advancedDigSettingsGUI.noPickupCheckbox = advancedDigSettingsGUI.noPickupCheckboxFrame:addCheckbox():setPosition(1, 1):setBackground(colors.black):setForeground(colors.lightGray)
+    advancedDigSettingsGUI.noPickupCheckboxLabel = advancedDigSettingsGUI.noPickupCheckboxFrame:addLabel():setText("Drop All"):setPosition(3, 1)
+
+    savedGUI.frame = optionFrame1.frame:addFrame():setPosition(2, 4):setSize(11,3):setBackground(colors.gray)
 
     savedGUI.saved1Button = savedGUI.frame:addButton():setText("1"):setPosition(2,1):setSize(1,1):setForeground(homeUIInfo.saved1ButtonColor)
     savedGUI.saved2Button = savedGUI.frame:addButton():setText("2"):setPosition(4,1):setSize(1,1):setForeground(homeUIInfo.saved2ButtonColor)
@@ -414,21 +425,22 @@ end
 function view.initAdvancedSettingsSelectionGUI(frame, homeUIInfo, digArgs, theme)
     advancedSettingsSelectionGUI.presetButton = frame:addButton():setText("\29"):setPosition("{parent.w-3}", 7):setSize(3, 1)
     advancedSettingsSelectionGUI.advancedSettingsButton = frame:addButton():setText("\4"):setPosition("{parent.w-3}", 8):setSize(3, 1)
-    advancedSettingsSelectionGUI.advancedInventoryControllerButton = frame:addButton():setText("\18"):setPosition("{parent.w-3}", 9):setSize(3, 1)
+    -- advancedSettingsSelectionGUI.advancedInventoryControllerButton = frame:addButton():setText("\18"):setPosition("{parent.w-3}", 9):setSize(3, 1)
 
     local frames = {
         preset = {
             button = advancedSettingsSelectionGUI.presetButton,
-            frame = savedGUI.frame
+            -- frame = savedGUI.frame
+            frame = optionFrame1.frame
         },
         advanced = {
             button = advancedSettingsSelectionGUI.advancedSettingsButton,
             frame = advancedDigSettingsGUI.frame
-        },
-        inventoryController = {
-            button = advancedSettingsSelectionGUI.advancedInventoryControllerButton,
-            frame = inventoryControllerGUI.frame
         }
+        -- inventoryController = {
+        --     button = advancedSettingsSelectionGUI.advancedInventoryControllerButton,
+        --     frame = inventoryControllerGUI.frame
+        -- }
     }
 
     local function showFrame(key)
@@ -466,22 +478,22 @@ function view.initAdvancedSettingsSelectionGUI(frame, homeUIInfo, digArgs, theme
         end
     end)
 
-    advancedSettingsSelectionGUI.advancedInventoryControllerButton:onClick(function(self, event, button, x, y)
-        if (event == "mouse_click") and (button == 1) then
-            showFrame("inventoryController")
-        elseif (event == "mouse_click") and (button == 2) then
-            hideAllFrames()
-        end
-    end)
+    -- advancedSettingsSelectionGUI.advancedInventoryControllerButton:onClick(function(self, event, button, x, y)
+    --     if (event == "mouse_click") and (button == 1) then
+    --         showFrame("inventoryController")
+    --     elseif (event == "mouse_click") and (button == 2) then
+    --         hideAllFrames()
+    --     end
+    -- end)
     showFrame("preset") -- todo maybe make it possible to select a favorite to show on startup
 end
 
 function view.init(frame, info, digArgs, homeUIInfo, rednetInfo, theme)
-    homeFrame = frame:addFrame():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-2}")
+    homeFrame = frame:addScrollableFrame():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-2}")
 
-    logFrame = frame:addFrame():setPosition(1, 14):setSize("{parent.w}", 7)
+    logFrame = frame:addFrame():setPosition(1, 14):setSize("{parent.w}", 6)
     logLabel = logFrame:addLabel():setText("Log:"):setPosition(1, 1)
-    logList = logFrame:addList():setPosition(1, 2):setSize("{parent.w}", 6)
+    logList = logFrame:addList():setPosition(1, 2):setSize("{parent.w}", 5)
 
     view.initBasicDigSettingsGUI(homeFrame, digArgs, homeUIInfo, theme)
     -- view.initAdvancedDigSettings(sub, digArgs, theme)
@@ -490,7 +502,7 @@ function view.init(frame, info, digArgs, homeUIInfo, rednetInfo, theme)
 
     view.initSavedGUI(homeFrame, homeUIInfo, theme)
 
-    view.initAdvanedInventoryControllerGUI(homeFrame, homeUIInfo, digArgs, theme)
+    -- view.initAdvanedInventoryControllerGUI(homeFrame, homeUIInfo, digArgs, theme)
 
     view.initAdvancedSettingsSelectionGUI(homeFrame, homeUIInfo, digArgs, theme)
 
@@ -646,6 +658,10 @@ function view.getDigArgs()
         ignoreFuelCheckbox = advancedDigSettingsGUI.ignoreFuelCheckbox,
         noPickupCheckbox = advancedDigSettingsGUI.noPickupCheckbox
     }
+end
+
+function view.get()
+    return components
 end
 
 return view
