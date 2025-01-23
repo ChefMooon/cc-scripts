@@ -644,7 +644,7 @@ local function initUpdateThread()
                 addLog(log, update.payload)
             elseif update.data then
                 connectedTurtleInfo[id] = update.data
-                viewInfo.updateConectedTurtleInfoGUI(connectedTurtleInfo, defaultTheme)
+                --viewInfo.updateConectedTurtleInfoGUI(connectedTurtleInfo, defaultTheme)
             end
         elseif update.command == "clipboard_copy" then
             clipboardCopy(update)

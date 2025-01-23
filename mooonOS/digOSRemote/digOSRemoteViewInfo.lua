@@ -52,7 +52,7 @@ end
 function view.updateConectedTurtleInfoGUI(turtleInfo, theme)
     connectedTurtleInfo = turtleInfo
     local yPos = 1
-    for _, value in ipairs(connectedTurtleInfo) do
+    for _, value in pairs(connectedTurtleInfo) do
         components.tInfoFrame = components.turtleListScrollableFrame:addFrame():setPosition(1, yPos):setSize("{parent.w}", 3):setBackground(theme.background)
 
         if (value.turtleInfo.jobStatus.working) then
