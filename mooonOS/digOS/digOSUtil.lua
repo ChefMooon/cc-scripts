@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSUtil",
-    version = "1.0.1",
+    version = "1.0.2",
     author = "ChefMooon"
 }
 
@@ -134,9 +134,10 @@ function digOSUtil.digArgsTableToString(digArgs)
     }, " ")
 end
 
-function digOSUtil.serializeJobInfo(message, digArgs, turtleFuel, layersMined, blocksMined, jobStartTime, jobElapsedTime)
+function digOSUtil.serializeJobInfo(message, flag, digArgs, turtleFuel, layersMined, blocksMined, jobStartTime, jobElapsedTime)
     return {
         message = message,
+        flag = flag,
         digArgs = digArgs,
         turtleFuel = turtleFuel,
         layersMined = layersMined,
@@ -149,6 +150,7 @@ end
 function digOSUtil.serializeJobInfoWithTurtleInfo(jobInfo, turtleInfo)
     return {
         message = jobInfo.message,
+        flag = jobInfo.flag,
         digArgs = jobInfo.digArgs,
         turtleFuel = jobInfo.turtleFuel,
         layersMined = jobInfo.layersMined,

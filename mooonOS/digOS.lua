@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.2",
+    version = "2.0.3",
     author = "ChefMooon"
 }
 
@@ -21,7 +21,6 @@ local programInfo = {
 ---     figure out how to make those images
 
 -- this will help filter broadcast messages
-local programName = "digOS"
 --local programVersion = "2.0.0"
 
 local defaultTheme = {
@@ -133,7 +132,7 @@ local programs = {}
 local savedSelection = 0
 -- Rednet Info
 local rednetInfo = {
-    programName = programName,
+    programName = programInfo.name,
     modemChannel = 11,
     rednetOpen = false,
     modem = peripheral.find("modem"),
@@ -147,38 +146,50 @@ local rednetInfo = {
 -- SETTINGS --
 
 local PROG_SETTINGS = {
-    rednetID = settingsUtil.define(programName, "rednetID", 0),
-    rednetStatus = settingsUtil.define(programName, "rednetStatus", 0),
-    saved1 = settingsUtil.define(programName, "saved1", ""),
-    saved2 = settingsUtil.define(programName, "saved2", ""),
-    saved3 = settingsUtil.define(programName, "saved3", ""),
-    saved4 = settingsUtil.define(programName, "saved4", ""),
-    saved5 = settingsUtil.define(programName, "saved5", ""),
-    moveCommand = settingsUtil.define(programName, "moveCommand", ""),
-    moveAmount = settingsUtil.define(programName, "moveAmount", 1),
-    moveDig = settingsUtil.define(programName, "moveDig", false)
+    rednetID = settingsUtil.define(programInfo.name, "rednetID", 0),
+    rednetStatus = settingsUtil.define(programInfo.name, "rednetStatus", 0),
+    saved1 = settingsUtil.define(programInfo.name, "saved1", ""),
+    saved2 = settingsUtil.define(programInfo.name, "saved2", ""),
+    saved3 = settingsUtil.define(programInfo.name, "saved3", ""),
+    saved4 = settingsUtil.define(programInfo.name, "saved4", ""),
+    saved5 = settingsUtil.define(programInfo.name, "saved5", ""),
+    moveCommand = settingsUtil.define(programInfo.name, "moveCommand", ""),
+    moveAmount = settingsUtil.define(programInfo.name, "moveAmount", 1),
+    moveDig = settingsUtil.define(programInfo.name, "moveDig", false)
 }
 
 -- local TURTLE_INFO = {
---     id = settingsUtil.define(programName, "id", os.getComputerID()),
---     label = settingsUtil.define(programName, "label", os.getComputerLabel()),
---     fuelSlot = settingsUtil.define(programName, "fuelSlot", 1),
---     fuel = settingsUtil.define(programName, "fuel", 0),
---     status = settingsUtil.define(programName, "status", ""),
+--     id = settingsUtil.define(programInfo.name, "id", os.getComputerID()),
+--     label = settingsUtil.define(programInfo.name, "label", os.getComputerLabel()),
+--     fuelSlot = settingsUtil.define(programInfo.name, "fuelSlot", 1),
+--     fuel = settingsUtil.define(programInfo.name, "fuel", 0),
+--     status = settingsUtil.define(programInfo.name, "status", ""),
 --     jobStatus = {
---         working = settingsUtil.define(programName, "jobStatus.working", false),
---         moving = settingsUtil.define(programName, "jobStatus.moving", false)
+--         working = settingsUtil.define(programInfo.name, "jobStatus.working", false),
+--         moving = settingsUtil.define(programInfo.name, "jobStatus.moving", false)
 --     }
 -- }
 
 settings.load()
+
+local moveDefaultSettings = {
+    moveCommand = "",
+    moveAmount = 1,
+    moveDig = false
+}
 
 local currentSettings = {
     saved1 = settingsUtil.get(PROG_SETTINGS.saved1),
     saved2 = settingsUtil.get(PROG_SETTINGS.saved2),
     saved3 = settingsUtil.get(PROG_SETTINGS.saved3),
     saved4 = settingsUtil.get(PROG_SETTINGS.saved4),
-    saved5 = settingsUtil.get(PROG_SETTINGS.saved5)
+    saved5 = settingsUtil.get(PROG_SETTINGS.saved5),
+    -- moveCommand = settingsUtil.get(PROG_SETTINGS.moveCommand),
+    -- moveAmount = settingsUtil.get(PROG_SETTINGS.moveAmount),
+    -- moveDig = settingsUtil.get(PROG_SETTINGS.moveDig)
+    moveCommand = moveDefaultSettings.moveCommand,
+    moveAmount = moveDefaultSettings.moveAmount,
+    moveDig = moveDefaultSettings.moveDig
 }
 
 if currentSettings.saved1 == nil then settingsUtil.set(PROG_SETTINGS.saved1, "") end
@@ -304,13 +315,13 @@ viewHome.init(sub[1], turtleInfo, digArgs, homeUIInfo, rednetInfo, defaultTheme)
 ----- MOVE MENU START (frontend) -----
 
 local moveThread = sub[2]:addThread()
-viewControl.init(sub[2], defaultTheme)
+viewControl.init(sub[2], currentSettings, defaultTheme)
 
 ----- MOVE MENU END (frontend) -----
 
 ----- SETTINGS MENU START (frontend) -----
 
-viewSettings.init(sub[3], turtleInfo, rednetInfo, defaultTheme)
+viewSettings.init(sub[3], turtleInfo, rednetInfo, programInfo, defaultTheme)
 viewSettings.initHomeNetworkOffOnButtons(digOSUtil.getNetworkOffButtonColor(rednetInfo, defaultTheme), digOSUtil.getNetworkOnButtonColor(rednetInfo, defaultTheme))
 
 ----- SETTINGS MENU END (frontend) -----
@@ -617,12 +628,20 @@ local function runDigOSMove()
     turtleInfo.jobStatus.moving = true
     if command == "forward" then
         digUtil.forward(distance, dig)
+    elseif command == "forward_once" then
+        digUtil.forward(1, dig)
     elseif command == "up" then
         digUtil.up(distance, dig)
+    elseif command == "up_once" then
+        digUtil.up(1, dig)
     elseif command == "down" then
         digUtil.down(distance, dig)
+    elseif command == "down_once" then
+        digUtil.down(1, dig)
     elseif command == "back" then
         digUtil.back(distance, dig)
+    elseif command == "back_once" then
+        digUtil.back(1, dig)
     elseif command == "turn_left" then
         digUtil.left(distance)
     elseif command == "turn_left_once" then
@@ -635,9 +654,17 @@ local function runDigOSMove()
         turtle.turnLeft()
         digUtil.forward(distance, dig)
         turtle.turnRight()
+    elseif command == "shift_left_once" then
+        turtle.turnLeft()
+        digUtil.forward(1, dig)
+        turtle.turnRight()
     elseif command == "shift_right" then
         turtle.turnRight()
         digUtil.forward(distance, dig)
+        turtle.turnLeft()
+    elseif command == "shift_right_once" then
+        turtle.turnRight()
+        digUtil.forward(1, dig)
         turtle.turnLeft()
     end
     settingsUtil.set(PROG_SETTINGS.moveCommand, "")
@@ -761,22 +788,21 @@ end
 local function listenForUpdates()
     while true do
         local event, updates = os.pullEvent("digOS_job_update")
-        local newLog = ""
-        -- if updates[1] ~= nil and type(updates[1]) == "string" then
         if (type(updates) == "table") then
-            turtleInfo.fuel = updates.turtleFuel
-            newLog = updates.message
+            if (updates.turtleFuel ~= nil) then
+                turtleInfo.fuel = updates.turtleFuel
+                updateFuelLabel(turtleInfo.fuel)
+            end
+            if (updates.flag == "local") then
+                addLog(log, updates.message)
+            end
         elseif (type(updates) == "string") then
             addLog(log, updates)
         else
-            newLog = "WARN: Invalid Update"
+            addLog(log, "WARN: Invalid Update")
         end
-        if rednetInfo.rednetOpen then
+        if rednetInfo.rednetOpen and updates.flag ~= "local" then
             sendJobUpdateToRemote(updates)
-        end
-
-        if updates.turtleFuel ~= nil and type(updates.turtleFuel) == "number" and turtleInfo.fuel ~= updates.turtleFuel then
-            updateFuelLabel(updates.turtleFuel)
         end
     end
 end
@@ -882,6 +908,7 @@ end
 local function startupRednet()
     rednetInfo.modem = peripheral.find("modem", rednet.open)
     addLog(log, "Rednet Opened. ID: "..rednetInfo.rednetID)
+    sendJobUpdateToRemote()
     rednetThread:start(receiveCommands)
     informationThread:start(startInformationThread)
 end
@@ -1005,10 +1032,11 @@ end)
 
 local function digCheckboxChange(self)
     if self:getValue() then
-        moveDig = false
+        currentSettings.moveDig = false
     else
-        moveDig = true
+        currentSettings.moveDig = true
     end
+    settingsUtil.set(PROG_SETTINGS.moveDig, currentSettings.moveDig)
 end
 viewControl.getMoveButtons().digCheckbox:onChange(digCheckboxChange)
 
@@ -1024,6 +1052,7 @@ end)
 
 local function setMoveAmount(_value)
     if _value <= 1000 and _value >= 1 then
+        currentSettings.moveAmount = _value
         settingsUtil.set(PROG_SETTINGS.moveAmount, _value)
         viewControl.getMoveButtons().moveAmountInput:setValue(_value)
     end
@@ -1032,9 +1061,11 @@ end
 viewControl.getMoveButtons().moveAmountAddButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
-            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 1)
+            setMoveAmount(math.min(currentSettings.moveAmount + 1, digUtil.CONST.DIG_MAX))
+            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 1)
         elseif (button == 2) then
-            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 5)
+            setMoveAmount(math.min(currentSettings.moveAmount + 5, digUtil.CONST.DIG_MAX))
+            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 5)
         end
     end
 end)
@@ -1042,58 +1073,84 @@ end)
 viewControl.getMoveButtons().moveAmountSubButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
-            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 1)
+            setMoveAmount(math.max(currentSettings.moveAmount - 1, digUtil.CONST.DIG_MIN))
+            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 1)
         elseif (button == 2) then
-            setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 5)
+            setMoveAmount(math.max(currentSettings.moveAmount - 5, digUtil.CONST.DIG_MIN))
+            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 5)
         end
     end
 end)
 
 local function doMove()
-    moveAmount = viewControl.getMoveButtons().moveAmountInput:getValue()
-    settingsUtil.set(PROG_SETTINGS.moveAmount, moveAmount)
-    addLog(log, moveAmount)
+    local amount = viewControl.getMoveButtons().moveAmountInput:getValue()
+    settingsUtil.set(PROG_SETTINGS.moveAmount, amount)
+    addLog(log, amount)
     startMoveThread()
 end
 
 viewControl.getMoveButtons().forwardButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        settingsUtil.set(PROG_SETTINGS.moveCommand, "forward")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "forward")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "forward_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().backwardButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        settingsUtil.set(PROG_SETTINGS.moveCommand, "back")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "back")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "back_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().upButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        settingsUtil.set(PROG_SETTINGS.moveCommand, "up")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "up")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "up_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().downButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        settingsUtil.set(PROG_SETTINGS.moveCommand, "down")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "down")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "down_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().shiftLeftButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().shiftRightButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right_once")
+        end
         doMove()
     end
 end)

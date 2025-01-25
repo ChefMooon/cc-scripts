@@ -1,14 +1,10 @@
 local programInfo = {
     name = "digOSRemote",
-    version = "2.0.1",
+    version = "2.0.2",
     author = "ChefMooon"
 }
 
--- digOSRemote V1.0.0
--- Created by: ChefMooon
-
 --PROGRAM TODO--
--- 
 -- 
 
 local defaultTheme = {
@@ -64,17 +60,7 @@ local viewSettings = mooonUtil.getProgram(mooonUtil.lib.digOSRemote.digOSRemoteV
 
 ----- REQUIRE END -----
 
-
---local programName = "digOSRemote"
---local programVersion = "1.0.0"
-
 local broadcastFilter = "digOS"
-
--- local filePath = "basalt.lua"
--- if not (fs.exists(filePath)) then
---     shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. filePath)
--- end
--- local basalt = require(filePath:gsub(".lua", ""))
 
 -- Selected Turtle Info
 local selectedID = ""
@@ -119,6 +105,7 @@ local savedSelection = 0
 local clipboard = ""
 
 -- Move Options
+-- TODO: Refactor me to currentSettings.*
 local moveCommand = ""
 local moveAmount = 1
 local moveDig = false
@@ -148,10 +135,19 @@ local PROG_SETTINGS = {
     saved2 = settingsUtil.define(programInfo.name, "saved2", ""),
     saved3 = settingsUtil.define(programInfo.name, "saved3", ""),
     saved4 = settingsUtil.define(programInfo.name, "saved4", ""),
-    saved5 = settingsUtil.define(programInfo.name, "saved5", "")
+    saved5 = settingsUtil.define(programInfo.name, "saved5", ""),
+    moveCommand = settingsUtil.define(programInfo.name, "moveCommand", ""),
+    moveAmount = settingsUtil.define(programInfo.name, "moveAmount", 1),
+    moveDig = settingsUtil.define(programInfo.name, "moveDig", false)
 }
 
 settings.load()
+
+local moveDefaultSettings = {
+    moveCommand = "",
+    moveAmount = 1,
+    moveDig = false
+}
 
 local currentSettings = {
     saved1 = settingsUtil.get(PROG_SETTINGS.saved1),
@@ -159,6 +155,9 @@ local currentSettings = {
     saved3 = settingsUtil.get(PROG_SETTINGS.saved3),
     saved4 = settingsUtil.get(PROG_SETTINGS.saved4),
     saved5 = settingsUtil.get(PROG_SETTINGS.saved5),
+    moveCommand = moveDefaultSettings.moveCommand,
+    moveAmount = moveDefaultSettings.moveAmount,
+    moveDig = moveDefaultSettings.moveDig
 }
 
 if currentSettings.saved1 == nil then settingsUtil.set(PROG_SETTINGS.saved1, "") end
@@ -370,7 +369,7 @@ end
 
 --- MOVE START ---
 
-viewControl.init(sub["Move"], defaultTheme)
+viewControl.init(sub["Move"], currentSettings, defaultTheme)
 
 --- MOVE END ---
 
@@ -572,14 +571,21 @@ end)
 local function sendGetTimeEsitmateCommand()
     local message = viewHome.getDigArgsFromUI()
     message.command = "time"
-    rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
+    for k, v in pairs(connectedTurtleInfo) do
+        rednet.send(k, message, rednetUtil.getProtocol(rednetInfo))
+        break
+    end
     addLog(log, "Time request Sent.")
 end
 
 local function sendGetTorchEsitmateCommand()
     local message = viewHome.getDigArgsFromUI()
     message.command = "torch"
-    rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
+    -- rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
+    for k, v in pairs(connectedTurtleInfo) do
+        rednet.send(k, message, rednetUtil.getProtocol(rednetInfo))
+        break
+    end
     addLog(log, "Torch request Sent.")
 end
 
@@ -644,7 +650,7 @@ local function initUpdateThread()
                 addLog(log, update.payload)
             elseif update.data then
                 connectedTurtleInfo[id] = update.data
-                --viewInfo.updateConectedTurtleInfoGUI(connectedTurtleInfo, defaultTheme)
+                viewInfo.updateConectedTurtleInfoGUI(connectedTurtleInfo, defaultTheme)
             end
         elseif update.command == "clipboard_copy" then
             clipboardCopy(update)
@@ -719,9 +725,10 @@ end)
 --- MOVE START (Backend) ---
 
 local function sendMoveCommand()
-    local message = { command = "move", moveAmount = moveAmount, moveCommand = moveCommand, moveDig = moveDig }
+    currentSettings.moveCommand = settingsUtil.get(PROG_SETTINGS.moveCommand)
+    local message = { command = "move", moveAmount = currentSettings.moveAmount, moveCommand = currentSettings.moveCommand, moveDig = currentSettings.moveDig }
     rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
-    addLog(log, tostring(moveAmount))
+    addLog(log, tostring(currentSettings.moveAmount))
     addLog(log, "move command sent")
     os.sleep(1) -- allow final update to arrive
 end
@@ -737,10 +744,11 @@ end
 
 local function digCheckboxChange(self)
     if self:getValue() then
-        moveDig = false
+        currentSettings.moveDig = false
     else
-        moveDig = true
+        currentSettings.moveDig = true
     end
+    settingsUtil.set(PROG_SETTINGS.moveDig, currentSettings.moveDig)
 end
 viewControl.getMoveButtons().digCheckbox:onChange(digCheckboxChange)
 
@@ -749,14 +757,15 @@ viewControl.getMoveButtons().moveAmountResetButton:onClick(function(self, event,
         viewControl.getMoveButtons().moveAmountInput:setValue("1")
         viewControl.getMoveButtons().digCheckbox:setValue(false)
         moveCommand = ""
-        moveAmount = 1
+        currentSettings.moveAmount = 1
         moveDig = false
     end
 end)
 
 local function setMoveAmount(_value)
     if _value <= 1000 and _value >= 1 then
-        moveAmount = _value
+        currentSettings.moveAmount = _value
+        settingsUtil.set(PROG_SETTINGS.moveAmount, _value)
         viewControl.getMoveButtons().moveAmountInput:setValue(_value)
     end
 end
@@ -764,9 +773,9 @@ end
 viewControl.getMoveButtons().moveAmountAddButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
-            setMoveAmount(moveAmount + 1)
+            setMoveAmount(math.min(currentSettings.moveAmount + 1, digUtil.CONST.DIG_MAX))
         elseif (button == 2) then
-            setMoveAmount(moveAmount + 5)
+            setMoveAmount(math.min(currentSettings.moveAmount + 5, digUtil.CONST.DIG_MAX))
         end
     end
 end)
@@ -774,52 +783,75 @@ end)
 viewControl.getMoveButtons().moveAmountSubButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
-            setMoveAmount(moveAmount - 1)
+            setMoveAmount(math.max(currentSettings.moveAmount - 1, digUtil.CONST.DIG_MIN))
         elseif (button == 2) then
-            setMoveAmount(moveAmount - 5)
+            setMoveAmount(math.max(currentSettings.moveAmount - 5, digUtil.CONST.DIG_MIN))
         end
     end
 end)
 
 viewControl.getMoveButtons().forwardButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "forward"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "forward")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "forward_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().backwardButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "back"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "back")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "back_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().upButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "up"
-        addLog(log, "up")
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "up")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "up_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().downButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "down"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "down")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "down_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().shiftLeftButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "shift_left"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left_once")
+        end
         doMove()
     end
 end)
 
 viewControl.getMoveButtons().shiftRightButton:onClick(function(self, event, button, x, y)
-    if (event == "mouse_click") and (button == 1) then
-        moveCommand = "shift_right"
+    if (event == "mouse_click") then
+        if (button == 1) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right")
+        elseif (button == 2) then
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right_once")
+        end
         doMove()
     end
 end)
@@ -827,9 +859,9 @@ end)
 viewControl.getMoveButtons().turnLeftButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
-            moveCommand = "turn_left"
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_left")
         elseif (button == 2) then
-            moveCommand = "turn_left_once"
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_left_once")
         end
         doMove()
     end
@@ -838,9 +870,9 @@ end)
 viewControl.getMoveButtons().turnRightButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
-            moveCommand = "turn_right"
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_right")
         elseif (button == 2) then
-            moveCommand = "turn_right_once"
+            settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_right_once")
         end
         doMove()
     end

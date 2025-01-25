@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSRemoteViewHome",
-    version = "1.0.0",
+    version = "1.0.1",
     author = "ChefMooon"
 }
 
@@ -106,17 +106,17 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
     basicDigSettingsGUI.lengthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("L:"):setPosition(1, 2)
     basicDigSettingsGUI.lengthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.length)
     basicDigSettingsGUI.lengthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText("\16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     basicDigSettingsGUI.widthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("W:"):setPosition(1, 3)
     basicDigSettingsGUI.widthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.width)
     basicDigSettingsGUI.widthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText("\16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     basicDigSettingsGUI.heightInputLabel = basicDigSettingsGUI.frame:addLabel():setText("H:"):setPosition(1, 4)
     basicDigSettingsGUI.heightInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.height)
     basicDigSettingsGUI.heightSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText("\16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
 
     basicDigSettingsGUI.offsetLeftButton = basicDigSettingsGUI.frame:addButton():setText("\171"):setPosition(14, 2):setSize(1, 1):setForeground(colors.lightGray)
     basicDigSettingsGUI.offsetRightButton = basicDigSettingsGUI.frame:addButton():setText("\187"):setPosition(15, 2):setSize(1, 1)
@@ -132,52 +132,40 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
 
     basicDigSettingsGUI.lengthSubButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
-            local newValue = basicDigSettingsGUI.lengthInput:getValue() - getNumberChange(button)
-            if newValue >= digUtil.CONST.DIG_MIN then
-                basicDigSettingsGUI.lengthInput:setValue(newValue)
-            end
+            local newValue = math.max(basicDigSettingsGUI.lengthInput:getValue() - getNumberChange(button), digUtil.CONST.DIG_MIN)
+            basicDigSettingsGUI.lengthInput:setValue(newValue)
         end
     end)
     basicDigSettingsGUI.lengthAddButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
-            local newValue = basicDigSettingsGUI.lengthInput:getValue() + getNumberChange(button)
-            if newValue <= digUtil.CONST.DIG_MAX then
-                basicDigSettingsGUI.lengthInput:setValue(newValue)
-            end
+            local newValue = math.min(basicDigSettingsGUI.lengthInput:getValue() + getNumberChange(button), digUtil.CONST.DIG_MAX)
+            basicDigSettingsGUI.lengthInput:setValue(newValue)
         end
     end)
 
     basicDigSettingsGUI.widthSubButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
-            local newValue = basicDigSettingsGUI.widthInput:getValue() - getNumberChange(button)
-            if newValue >= digUtil.CONST.DIG_MIN then
-                basicDigSettingsGUI.widthInput:setValue(newValue)
-            end
+            local newValue = math.max(basicDigSettingsGUI.widthInput:getValue() - getNumberChange(button), digUtil.CONST.DIG_MIN)
+            basicDigSettingsGUI.widthInput:setValue(newValue)
         end
     end)
     basicDigSettingsGUI.widthAddButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
-            local newValue = basicDigSettingsGUI.widthInput:getValue() + getNumberChange(button)
-            if newValue <= digUtil.CONST.DIG_MAX then
-                basicDigSettingsGUI.widthInput:setValue(newValue)
-            end
+            local newValue = math.min(basicDigSettingsGUI.widthInput:getValue() + getNumberChange(button), digUtil.CONST.DIG_MAX)
+            basicDigSettingsGUI.widthInput:setValue(newValue)
         end
     end)
 
     basicDigSettingsGUI.heightSubButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
-            local newValue = basicDigSettingsGUI.heightInput:getValue() - getNumberChange(button)
-            if newValue >= digUtil.CONST.DIG_MIN then
-                basicDigSettingsGUI.heightInput:setValue(newValue)
-            end
+            local newValue = math.max(basicDigSettingsGUI.heightInput:getValue() - getNumberChange(button), digUtil.CONST.DIG_MIN)
+            basicDigSettingsGUI.heightInput:setValue(newValue)
         end
     end)
     basicDigSettingsGUI.heightAddButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
-            local newValue = basicDigSettingsGUI.heightInput:getValue() + getNumberChange(button)
-            if newValue <= digUtil.CONST.DIG_MAX then
-                basicDigSettingsGUI.heightInput:setValue(newValue)
-            end
+            local newValue = math.min(basicDigSettingsGUI.heightInput:getValue() + getNumberChange(button), digUtil.CONST.DIG_MAX)
+            basicDigSettingsGUI.heightInput:setValue(newValue)
         end
     end)
 

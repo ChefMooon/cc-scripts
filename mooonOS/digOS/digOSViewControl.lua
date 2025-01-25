@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSViewMove",
-    version = "1.0.1",
+    version = "1.0.2",
     author = "ChefMooon"
 }
 
@@ -144,16 +144,16 @@ function view.initInventoryControl(frame)
     end)
 end
 
-function view.init(frame, theme)
+function view.init(frame, currentSettings, theme)
     moveInputFrame = frame:addFrame():setPosition(1, 2):setSize(16, "{parent.h-3}")
 
     moveInputFrameLabel = moveInputFrame:addLabel():setText("Move"):setPosition(7, 1)
 
     digOptionFrame = moveInputFrame:addFrame():setPosition(10, 7):setSize(7, 1):setBackground(colors.gray):setForeground(colors.black)
     digCheckBoxLabel = digOptionFrame:addLabel():setText("Dig"):setPosition(4, 1)
-    digCheckbox = digOptionFrame:addCheckbox():setPosition(2, 1):setBackground(colors.black):setForeground(colors.lightGray)
+    digCheckbox = digOptionFrame:addCheckbox():setPosition(2, 1):setBackground(colors.black):setForeground(colors.lightGray):setValue(currentSettings.moveDig)
 
-    moveAmountInput = moveInputFrame:addInput():setPosition(6, 9):setSize(7, 1):setInputType("number"):setInputLimit(4):setValue("1")
+    moveAmountInput = moveInputFrame:addInput():setPosition(6, 9):setSize(7, 1):setInputType("number"):setInputLimit(4):setValue(currentSettings.moveAmount)
 
     moveAmountResetButton = moveInputFrame:addButton():setText("RESET"):setPosition(1,"{parent.h-1}"):setSize(5,1)
     moveAmountSubButton = moveInputFrame:addButton():setText("\0\17\0"):setPosition(2, 9):setSize(3, 1)

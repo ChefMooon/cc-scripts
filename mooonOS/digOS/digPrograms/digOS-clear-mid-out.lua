@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS-clear-mid-out",
-    version = "1.1.1",
+    version = "1.1.2",
     author = "ChefMooon"
 }
 
@@ -84,7 +84,11 @@ local function getElapsedTime()
 end
 
 local function sendJobUpdate(_message)
-    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, "remote", digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+end
+
+local function sendLocalJobUpdate(_message)
+    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, "local", digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
 end
 
 local function sendSimpleJobUpdate(_message)
@@ -681,7 +685,7 @@ local function initDig(length, width, height, offsetDir, torch, chest, rts)
                 return ok, err
             end
         end
-        sendJobUpdate("layer "..tostring(layersMined).." of "..tostring(length).." Complete.")
+        sendLocalJobUpdate("layer "..tostring(layersMined).." of "..tostring(length).." Complete.")
     end
     zPosReset()
     if rts == "true" then
