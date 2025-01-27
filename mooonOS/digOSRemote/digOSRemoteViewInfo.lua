@@ -61,7 +61,12 @@ function view.updateConectedTurtleInfoGUI(turtleInfo, theme)
             components.tInfoWorkingStatus = components.tInfoFrame:addFrame():setPosition(1, 1):setSize(1, 1):setBackground(colors.red)
         end
 
-        components.tInfoLabel1 = components.tInfoFrame:addLabel():setText(value.turtleInfo.idLabel):setPosition(3, 1):setSize("{parent.w-3}", 1):setForeground(theme.text)
+        local turtleName = value.turtleInfo.name
+        if type(turtleName) == "number" then
+            turtleName = tostring(turtleName)
+        end
+
+        components.tInfoLabel1 = components.tInfoFrame:addLabel():setText(turtleName):setPosition(3, 1):setSize("{parent.w-3}", 1):setForeground(theme.text)
         components.listFuelLabel = components.tInfoFrame:addLabel():setText("Fuel: "..tostring(value.turtleInfo.fuel)):setPosition(1, 2)
         if (value.jobElapsedTime) then
             components.listStartTimeLabel = components.tInfoFrame:addLabel():setText(tostring(value.jobElapsedTime)):setPosition(14, 2)
