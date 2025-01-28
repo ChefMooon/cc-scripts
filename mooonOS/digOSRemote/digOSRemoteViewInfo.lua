@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSRemoteViewInfo",
-    version = "1.0.0",
+    version = "1.0.2",
     author = "ChefMooon"
 }
 
@@ -61,7 +61,7 @@ function view.updateConectedTurtleInfoGUI(turtleInfo, theme)
             components.tInfoWorkingStatus = components.tInfoFrame:addFrame():setPosition(1, 1):setSize(1, 1):setBackground(colors.red)
         end
 
-        local turtleName = value.turtleInfo.name
+        local turtleName = value.turtleInfo.idLabel
         if type(turtleName) == "number" then
             turtleName = tostring(turtleName)
         end
