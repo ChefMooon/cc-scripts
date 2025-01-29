@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.3",
+    version = "2.0.4",
     author = "ChefMooon"
 }
 
@@ -119,7 +119,8 @@ local turtleInfo = {
 local history = {
     lastUpdateMessage = {
         data = {}
-    }
+    },
+    lastMessageSentTime = os.time("local")
 }
 
 -- Dig Args
@@ -793,16 +794,29 @@ local function listenForUpdates()
                 turtleInfo.fuel = updates.turtleFuel
                 updateFuelLabel(turtleInfo.fuel)
             end
-            if (updates.flag == "local") then
-                addLog(log, updates.message)
-            end
+            addLog(log, updates.message)
         elseif (type(updates) == "string") then
             addLog(log, updates)
         else
             addLog(log, "WARN: Invalid Update")
         end
         if rednetInfo.rednetOpen and updates.flag ~= "local" then
-            sendJobUpdateToRemote(updates)
+            if updates.flag == "job_start" then
+                history.lastMessageSentTime = os.time("local")
+                sendJobUpdateToRemote(updates)
+            elseif updates.flag == "optional" then
+                local currentTime = os.time("local")
+                addLog(log, "Difference: "..tostring((currentTime - history.lastMessageSentTime) * 1000))
+                if digOSUtil.canSendMessage(history.lastMessageSentTime, currentTime) then
+                    history.lastMessageSentTime = currentTime
+                    sendJobUpdateToRemote(updates)
+                    addLog(log, "Optional Update Sent.")
+                else
+                    addLog(log, "Optional Update Not Sent.")
+                end
+            else
+                sendJobUpdateToRemote(updates)
+            end
         end
     end
 end

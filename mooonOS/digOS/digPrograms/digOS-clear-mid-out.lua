@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS-clear-mid-out",
-    version = "1.1.2",
+    version = "1.1.3",
     author = "ChefMooon"
 }
 
@@ -13,6 +13,7 @@ local programName = "digOS-mid-out"
 
 local digOSUtil = require("/mooonOS/digOS/digOSUtil")
 local rednetUtil = require("/mooonOS/common/rednetUtil")
+local settingsUtil = require("/mooonOS/common/settingsUtil")
 
 -- digOS-mid-out
 turtle.select(1)
@@ -26,6 +27,8 @@ local turtleFuelSlot = 1
 local turtleOptimalFuel = 100
 local jobStartTime = os.time("local")
 local jobStartTimeEpoch = 0
+
+local digVariables = {}
 
 local torchPlaced = false
 
@@ -83,12 +86,21 @@ local function getElapsedTime()
     return string.format("%02d:%02d:%02d", hours, minutes, seconds)
 end
 
+local function sendCustomJobUpdate(_message, _flag)
+    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, _flag, digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+end
+
 local function sendJobUpdate(_message)
+    sendCustomJobUpdate(_message, "remote")
     rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, "remote", digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
 end
 
+local function sendOptionalJobUpdate(_message)
+    sendCustomJobUpdate(_message, "optional")
+end
+
 local function sendLocalJobUpdate(_message)
-    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, "local", digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+    sendCustomJobUpdate(_message, "local")
 end
 
 local function sendSimpleJobUpdate(_message)
@@ -685,7 +697,7 @@ local function initDig(length, width, height, offsetDir, torch, chest, rts)
                 return ok, err
             end
         end
-        sendLocalJobUpdate("layer "..tostring(layersMined).." of "..tostring(length).." Complete.")
+        sendOptionalJobUpdate("layer "..tostring(layersMined).." of "..tostring(length).." Complete.")
     end
     zPosReset()
     if rts == "true" then
@@ -712,6 +724,7 @@ end
 
 --- Main Loop Start ---
 if digArgs.command == "run" then
+    digVariables = digOSUtil.initDigVariables(turtle.getFuelLevel(), 100)
     turtleFuel = turtle.getFuelLevel()
     while true do
         if inventoryStatus == nil then
@@ -723,6 +736,7 @@ if digArgs.command == "run" then
             jobStartTime = os.time("local")
             jobStartTimeEpoch = os.epoch("local")
             sendJobUpdate("Job Started... Time: ".. getTimeEstimate(digArgs))
+            sendCustomJobUpdate("Job Started... Time: ".. getTimeEstimate(digArgs), "job_start")
             local ok, err = initDig(digArgs.length, digArgs.width, digArgs.height, digArgs.offsetDir, digArgs.torch.torch, digArgs.chest.chest, digArgs.rts)
             if ok then
                 sendJobUpdate("Job Complete. "..tostring(blocksMined).." Blocks Mined.")

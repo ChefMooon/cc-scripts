@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSUtil",
-    version = "1.0.2",
+    version = "1.0.3",
     author = "ChefMooon"
 }
 
@@ -201,6 +201,16 @@ function digOSUtil.getTurtleIDLabel()
     return result
 end
 
+function digOSUtil.canSendMessage(lastMessageSentTime, currentTtime)
+    if lastMessageSentTime == nil then
+        return true
+    end
+    if ((currentTtime - lastMessageSentTime) * 1000) > 5 then
+        return true
+    end
+    return false
+end
+
 
 
 --- THEME RELATED FUNCTIONS ---
@@ -245,6 +255,42 @@ function digOSUtil.getNetworkOnButtonColor(rednetInfo, theme)
 end
 
 --- THEME RELATED FUNCTIONS END ---
+
+--- DIG PROGRAM UTILS ---
+
+digOSUtil.digVariables = {
+    yPos = 0,
+    zPos = 0,
+    layersMined = 0,
+    blocksMined = 0,
+    turtleFuel = 0,
+    turtleFuelSlot = 1,
+    turtleOptimalFuel = 100,
+    jobStartTime = os.time("local"),
+    jobStartTimeEpoch = 0
+}
+
+function digOSUtil.initDigVariables(turtleFuel, turtleOptimalFuel)
+    digOSUtil.digVariables.turtleFuel = turtleFuel
+    digOSUtil.digVariables.turtleOptimalFuel = turtleOptimalFuel
+    return digOSUtil.digVariables
+end
+
+function digOSUtil.updateDigVariables(yPos, zPos, layersMined, blocksMined, turtleFuel, jobStartTime)
+    digOSUtil.digVariables.yPos = yPos
+    digOSUtil.digVariables.zPos = zPos
+    digOSUtil.digVariables.layersMined = layersMined
+    digOSUtil.digVariables.blocksMined = blocksMined
+    digOSUtil.digVariables.turtleFuel = turtleFuel
+    digOSUtil.digVariables.jobStartTime = jobStartTime
+    digOSUtil.digVariables.jobStartTimeEpoch = os.epoch("local")
+end
+
+function digOSUtil.getDigVariables()
+    return digOSUtil.digVariables
+end
+
+--- DIG PROGRAM UTILS END ---
 
 
 return digOSUtil
