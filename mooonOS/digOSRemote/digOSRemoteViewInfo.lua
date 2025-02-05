@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSRemoteViewInfo",
-    version = "1.0.2",
+    version = "1.0.3",
     author = "ChefMooon"
 }
 
@@ -50,6 +50,11 @@ function view.init(frame, info, rednetInfo, theme)
 end
 
 function view.updateConectedTurtleInfoGUI(turtleInfo, theme)
+    -- Clear existing components
+    if components.turtleListScrollableFrame then
+        components.turtleListScrollableFrame:removeChildren()
+    end
+
     connectedTurtleInfo = turtleInfo
     local yPos = 1
     for _, value in pairs(connectedTurtleInfo) do

@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSViewSettings",
-    version = "V1.0.1",
+    version = "V1.0.2",
     author = "ChefMooon"
 }
 
@@ -38,10 +38,12 @@ function view.initHomeNetworkOffOnButtons(offButtonColor, onButtonColor)
     components.homeNetworkOnButton:setForeground(onButtonColor)
 end
 
+function view.updateRednetID(rednetID)
+    components.homeNetworkID:setValue(rednetID)
+end
+
 function view.get()
     return components
 end
-
-
 
 return view

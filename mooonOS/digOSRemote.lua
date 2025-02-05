@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSRemote",
-    version = "2.0.2",
+    version = "2.0.3",
     author = "ChefMooon"
 }
 
@@ -274,7 +274,8 @@ local menubarRednetStatusButton = menubarInfoFrame:addButton():setText(""):setPo
 local programLabel = menubarInfoFrame:addLabel():setText(programInfo.name):setPosition(3, 1):setForeground(colors.yellow)
 
 --local rednetThread = sub[1]:addThread()
-local updateThread = sub["Home"]:addThread()
+local updateThread = sub["Info"]:addThread()
+local clipboardThread = sub["Home"]:addThread()
 
 ---------- **** FRONTEND START **** ----------
 ----- HOME MENU START (frontend) -----
@@ -630,18 +631,6 @@ end)
 --- 
 --- Idea make a seperate screen to edit clipboard data
 
-local function clipboardCopy(_info)
-    clipboard = _info
-    settingsUtil.set(PROG_SETTINGS.clipboard, _info)
-    -- setSetting(settingClipboard, _info)
-    addLog(log, "Clipboard: Info Saved")
-end
-
-local function clipboardPaste(_id)
-    rednet.send(_id, clipboard, "digOS_clipboard_paste_info")
-    addLog(log, "Clipboard: Info Requested")
-end
-
 local function initUpdateThread()
     while true do
         local id, update = rednet.receive("digOS_update"..rednetInfo.rednetID)
@@ -652,10 +641,6 @@ local function initUpdateThread()
                 connectedTurtleInfo[id] = update.data
                 viewInfo.updateConectedTurtleInfoGUI(connectedTurtleInfo, defaultTheme)
             end
-        elseif update.command == "clipboard_copy" then
-            clipboardCopy(update)
-        elseif update.command == "clipboard_paste" then
-            clipboardPaste(id)
         else
             addLog(log, "Invalid Update Received.")
         end
@@ -673,6 +658,42 @@ local function stopUpdateThread()
     addLog(log, "Update Thread Stopped.")
 end
 
+local function clipboardCopy(_id, _info)
+    clipboard = _info
+    settingsUtil.set(PROG_SETTINGS.clipboard, _info)
+    -- setSetting(settingClipboard, _info)
+    addLog(log, "Clipboard: Info Saved")
+    rednet.send(_id, "Clipboard: Info Saved", "digOS_clipboard_copy_confirmation")
+end
+
+local function clipboardPaste(_id)
+    rednet.send(_id, clipboard, "digOS_clipboard_paste_info")
+    addLog(log, "Clipboard: Info Requested")
+end
+
+local function initClipboardThread()
+    while true do
+        local id, update = rednet.receive("digOS_clipboard"..rednetInfo.rednetID)
+        if update.command == "clipboard_copy" then
+            clipboardCopy(id, update)
+        elseif update.command == "clipboard_paste" then
+            clipboardPaste(id)
+        else
+            addLog(log, "Invalid Update Received.")
+        end
+    end
+end
+
+local function startClipboardThread()
+    clipboardThread:start(initClipboardThread)
+    addLog(log, "Clipboard Thread Started.")
+end
+
+local function stopClipboardThread()
+    clipboardThread:stop()
+    addLog(log, "Clipboard Thread Stopped.")
+end
+
 local function stopRednet()
     if rednetInfo.rednetOpen then
         rednetInfo.rednetOpen = false
@@ -680,6 +701,7 @@ local function stopRednet()
         rednet.close()
         --rednetThread:stop()
         stopUpdateThread()
+        stopClipboardThread()
         addLog(log, "Rednet Closed")
     end
 end
@@ -696,6 +718,7 @@ local function startRednet()
         addLog(log, "Rednet Opened. ID: "..rednetInfo.rednetID)
         --rednetThread:start()
         startUpdateThread()
+        startClipboardThread()
     end
 end
 
@@ -705,6 +728,7 @@ local function startupRednet()
     initConnectedTurtleInfo()
     --rednetThread:start()
     startUpdateThread()
+    startClipboardThread()
 end
 
 local function toggleRednet()

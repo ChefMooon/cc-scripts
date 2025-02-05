@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.4",
+    version = "2.0.5",
     author = "ChefMooon"
 }
 
@@ -242,6 +242,7 @@ local function initRednetID()
         local id = math.random(1, 99)
         rednetInfo.rednetID = id
         settingsUtil.set(PROG_SETTINGS.rednetID, id)
+        viewSettings.updateRednetID(id)
     else
         rednetInfo.rednetID = settingsUtil.get(PROG_SETTINGS.rednetID)
     end
@@ -425,7 +426,9 @@ viewHome.getFuelGUI().fuelButton:onClick(function(self, event, button, x, y)
         elseif button == 2 then
             addLog(log, refuelButton("max"))
         end
-        updateFuelLabel(turtle.getFuelLevel())
+        local newFuel = turtle.getFuelLevel()
+        turtleInfo.fuel = newFuel
+        updateFuelLabel(newFuel)
     end
 end)
 
@@ -963,10 +966,16 @@ local function clipboard(_function)
         if _function == "copy" then
             digArgs = viewHome.getDigArgsFromUI()
             digArgs.command = "clipboard_copy"
-            rednet.broadcast(digArgs, "digOS_update"..rednetInfo.rednetID)
-            addLog(log, "Clipboard: Copy")
+            rednet.broadcast(digArgs, "digOS_clipboard"..rednetInfo.rednetID)
+            addLog(log, "Clipboard: Info Sent")
+            local copyID, copyUpdate = rednet.receive("digOS_clipboard_copy_confirmation", 5)
+            if copyUpdate then
+                addLog(log, "Clipboard: Copy Success")
+            else
+                addLog(log, "Clipboard: Copy Failure")
+            end
         elseif _function == "paste" then
-            rednet.broadcast({ command = "clipboard_paste"}, "digOS_update"..rednetInfo.rednetID)
+            rednet.broadcast({ command = "clipboard_paste"}, "digOS_clipboard"..rednetInfo.rednetID)
             -- get response and set ui
             local id, info = rednet.receive("digOS_clipboard_paste_info", 3)
             if info then
