@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.5",
+    version = "2.0.6",
     author = "ChefMooon"
 }
 
@@ -613,14 +613,24 @@ local function sendJobUpdateToRemote(_message)
             data = {}
         }
         if _message == nil then
-            updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(history.lastUpdateMessage.data, turtleInfo)
-        elseif type(_message) == "table" then
-            history.lastUpdateMessage.data = _message
-            updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(_message, turtleInfo)
+            updateMessage.data = { -- TODO: Improve me
+                message = "Startup.",
+                flag = "remote",
+                digArgs = viewHome.getDigArgsFromUI(),
+                turtleFuel = turtleInfo.fuel,
+                0, 0, 0, 0,
+                turtleInfo = turtleInfo
+            }
+            rednet.broadcast(updateMessage, "digOS_update"..rednetInfo.rednetID)
         else
-            updateMessage.payload = _message
+            if type(_message) == "table" then
+                history.lastUpdateMessage.data = _message
+                updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(_message, turtleInfo)
+            else
+                updateMessage.payload = _message
+            end
+            rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
         end
-        rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
     end
 end
 
