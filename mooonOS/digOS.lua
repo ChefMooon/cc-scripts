@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.6",
+    version = "2.0.7",
     author = "ChefMooon"
 }
 
@@ -31,7 +31,10 @@ local defaultTheme = {
     networkTrue = colors.black,
     networkFalse = colors.lightGray,
     savedDataTrue = colors.yellow,
-    savedDataFalse = colors.black
+    savedDataFalse = colors.black,
+    buttonForeground = colors.black,
+    buttonBackground = colors.gray,
+    buttonPressed = colors.yellow
 }
 
 ----- REQUIRE START -----
@@ -103,6 +106,11 @@ local turtleStats = {
     blocksMined = 0
 }
 
+local defaultStatistics = {
+    blocksMined = 0,
+    fuelConsumed = 0,
+}
+
 local turtleInfo = {
     id = os.getComputerID(),
     label = os.getComputerLabel(),
@@ -156,8 +164,11 @@ local PROG_SETTINGS = {
     saved5 = settingsUtil.define(programInfo.name, "saved5", ""),
     moveCommand = settingsUtil.define(programInfo.name, "moveCommand", ""),
     moveAmount = settingsUtil.define(programInfo.name, "moveAmount", 1),
-    moveDig = settingsUtil.define(programInfo.name, "moveDig", false)
+    moveDig = settingsUtil.define(programInfo.name, "moveDig", false),
+    statistics = settingsUtil.define(programInfo.name, "statistics", defaultStatistics),
 }
+
+
 
 -- local TURTLE_INFO = {
 --     id = settingsUtil.define(programInfo.name, "id", os.getComputerID()),
@@ -190,7 +201,8 @@ local currentSettings = {
     -- moveDig = settingsUtil.get(PROG_SETTINGS.moveDig)
     moveCommand = moveDefaultSettings.moveCommand,
     moveAmount = moveDefaultSettings.moveAmount,
-    moveDig = moveDefaultSettings.moveDig
+    moveDig = moveDefaultSettings.moveDig,
+    statistics = settingsUtil.get(PROG_SETTINGS.statistics)
 }
 
 if currentSettings.saved1 == nil then settingsUtil.set(PROG_SETTINGS.saved1, "") end
@@ -288,11 +300,21 @@ local menubar = main:addMenubar():setScrollable()
     :addItem("Settings")
     :addItem("Info")
 
-local menubarInfoFrame = main:addFrame():setPosition("{parent.w-7}", 1):setSize(7,1):setBackground(colors.gray)
+local menubarInfoFrame = main:addFrame():setPosition("{parent.w-7}", 1):setSize(7, 1):setBackground(colors.gray)
 
-local menubarRednetStatusButton = menubarInfoFrame:addButton():setText(""):setPosition(1, 1):setSize(1,1):setBackground(digOSUtil.getMenubarRednetStatusButtonColor(rednetInfo, defaultTheme))
+local menubarRednetStatusButton = menubarInfoFrame:addButton():setText(""):setPosition(1, 1):setSize(1, 1):setBackground(digOSUtil.getMenubarRednetStatusButtonColor(rednetInfo, defaultTheme))
 
-local programLabel = menubarInfoFrame:addLabel():setText("digOS"):setPosition(3, 1):setForeground(colors.yellow)
+local programInfoButton = menubarInfoFrame:addButton():setText("digOS"):setPosition(3, 1):setSize(5, 1):setForeground(colors.yellow)
+
+programInfoButton:onClick(function(self, event, button, x, y)
+    if sub[1]:isVisible() and (event == "mouse_click") then
+        if viewHome.getProgramInfoGUI().frame:isVisible() then
+            viewHome.getProgramInfoGUI().frame:hide()
+        else
+            viewHome.getProgramInfoGUI().frame:show()
+        end
+    end
+end)
 
 ---------- **** FRONTEND START **** ----------
 ----- HOME MENU START (frontend) -----
@@ -310,13 +332,15 @@ local homeUIInfo = {
     saved5ButtonColor = digOSUtil.getSavedButtonColor(5, currentSettings, defaultTheme)
 }
 
-viewHome.init(sub[1], turtleInfo, digArgs, homeUIInfo, rednetInfo, defaultTheme)
+viewHome.init(sub[1], turtleInfo, digArgs, homeUIInfo, rednetInfo, currentSettings.statistics, defaultTheme)
+viewHome.initProgramInfoGUI(sub[1], programInfo, defaultTheme)
 
 ----- HOME MENU END (frontend) -----
 
 ----- MOVE MENU START (frontend) -----
 
 local moveThread = sub[2]:addThread()
+local inventoryThread = sub[2]:addThread()
 viewControl.init(sub[2], currentSettings, defaultTheme)
 
 ----- MOVE MENU END (frontend) -----
@@ -613,24 +637,14 @@ local function sendJobUpdateToRemote(_message)
             data = {}
         }
         if _message == nil then
-            updateMessage.data = { -- TODO: Improve me
-                message = "Startup.",
-                flag = "remote",
-                digArgs = viewHome.getDigArgsFromUI(),
-                turtleFuel = turtleInfo.fuel,
-                0, 0, 0, 0,
-                turtleInfo = turtleInfo
-            }
-            rednet.broadcast(updateMessage, "digOS_update"..rednetInfo.rednetID)
+            updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(history.lastUpdateMessage.data, turtleInfo)
+        elseif type(_message) == "table" then
+            history.lastUpdateMessage.data = _message
+            updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(_message, turtleInfo)
         else
-            if type(_message) == "table" then
-                history.lastUpdateMessage.data = _message
-                updateMessage.data = digOSUtil.serializeJobInfoWithTurtleInfo(_message, turtleInfo)
-            else
-                updateMessage.payload = _message
-            end
-            rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
+            updateMessage.payload = _message
         end
+        rednet.send(rednetInfo.remoteID, updateMessage, "digOS_update"..rednetInfo.rednetID)
     end
 end
 
@@ -739,6 +753,58 @@ local function startProgram()
     os.sleep(1) -- allow final update to arrive
 end
 
+local function dropAllItems()
+    digUtil.dropAllItems()
+    addLog(log, "Dropped All Items.")
+    inventoryThread:stop()
+end
+
+local function startDropAllThread()
+    inventoryThread:start(dropAllItems)
+end
+
+local function dropAllItemsUp()
+    digUtil.dropAllItemsUp()
+    addLog(log, "Dropped All Items Up.")
+    inventoryThread:stop()
+end
+
+local function startDropAllUpThread()
+    inventoryThread:start(dropAllItemsUp)
+end
+
+local function dropButton(self, event, button)
+    if (event == "mouse_click") then
+        if (button == 1) then
+            turtle.drop()
+        elseif (button == 2) then
+            if inventoryThread:getStatus() ~= "suspended" then
+                startDropAllThread()
+            end
+        end
+    end
+end
+
+local function updateStatistics(_update)
+    local stats = settingsUtil.get(PROG_SETTINGS.statistics)
+    if _update.jobStatistics.blocksMined ~= nil then
+        if stats.blocksMined then
+            stats.blocksMined = stats.blocksMined + _update.jobStatistics.blocksMined
+        else
+            stats.blocksMined = _update.jobStatistics.blocksMined
+        end
+    end
+    if _update.jobStatistics.fuelConsumed ~= nil then
+        if stats.fuelConsumed then
+            stats.fuelConsumed = stats.fuelConsumed + _update.jobStatistics.fuelConsumed
+        else
+            stats.fuelConsumed = _update.jobStatistics.fuelConsumed
+        end
+    end
+    settingsUtil.set(PROG_SETTINGS.statistics, stats)
+    viewHome.updateStatistics(stats)
+end
+
 local function listenForInputs()
     while true do
         local inputEvent, update = os.pullEvent("digOS_job_input")
@@ -813,19 +879,22 @@ local function listenForUpdates()
         else
             addLog(log, "WARN: Invalid Update")
         end
+        if updates.flag == "job_end" then
+            updateStatistics(updates)
+        end
         if rednetInfo.rednetOpen and updates.flag ~= "local" then
             if updates.flag == "job_start" then
                 history.lastMessageSentTime = os.time("local")
                 sendJobUpdateToRemote(updates)
             elseif updates.flag == "optional" then
                 local currentTime = os.time("local")
-                addLog(log, "Difference: "..tostring((currentTime - history.lastMessageSentTime) * 1000))
+                -- addLog(log, "Difference: "..tostring((currentTime - history.lastMessageSentTime) * 1000))
                 if digOSUtil.canSendMessage(history.lastMessageSentTime, currentTime) then
                     history.lastMessageSentTime = currentTime
                     sendJobUpdateToRemote(updates)
                     addLog(log, "Optional Update Sent.")
-                else
-                    addLog(log, "Optional Update Not Sent.")
+                -- else -- save for testing
+                --     addLog(log, "Optional Update Not Sent.")
                 end
             else
                 sendJobUpdateToRemote(updates)
@@ -842,6 +911,8 @@ local function informationHandler()
                 addLog(log, "Info Request.")
                 local info = {turtleInfo.idLabel, turtleInfo.fuel, turtleInfo.turtleStatus, programs}
                 rednet.send(id, info, rednetUtil.getProtocol(rednetInfo))
+            elseif message.command == "digOSRemote_update_info" then
+                sendJobUpdateToRemote()
             elseif message.command == "digOSRemote_startup_info" then
                 addLog(log, "Remote Startup Info Request.")
                 sendJobUpdateToRemote()
@@ -884,6 +955,12 @@ local function receiveCommands()
                 addLog(log, "Remote Torch request recieved.")
                 digArgs = message
                 getRemoteTorchEstimate()
+            elseif message.command == "digOSRemote_drop_all_items" then
+                addLog(log, "Remote Drop All Items cmd recieved.")
+                startDropAllThread()
+            elseif message.command == "digOSRemote_drop_all_items_up" then
+                addLog(log, "Remote Drop All Items Up cmd recieved.")
+                startDropAllUpThread()
             else
                 addLog(log, "Invalid Command Recieved.")
             end
@@ -906,6 +983,7 @@ local function stopRednet()
     if rednetInfo.rednetOpen then
         viewSettings.get().homeNetworkOffButton:setForeground(colors.black)
         viewSettings.get().homeNetworkOnButton:setForeground(colors.lightGray)
+        viewHome.getClipboardGUI().frame:hide()
         rednetInfo.rednetOpen = false
         setRednetStatus(rednetInfo.rednetOpen)
         rednet.close()
@@ -919,6 +997,7 @@ local function startRednet()
     if not rednetInfo.rednetOpen then
         viewSettings.get().homeNetworkOffButton:setForeground(colors.lightGray)
         viewSettings.get().homeNetworkOnButton:setForeground(colors.black)
+        viewHome.getClipboardGUI().frame:show()
         rednetInfo.rednetOpen = true
         setRednetStatus(rednetInfo.rednetOpen)
         rednetInfo.modem = peripheral.find("modem", rednet.open)
@@ -1059,6 +1138,22 @@ viewHome.get().torchEstimateButton:onClick(function(self, event, button, x, y)
     end
 end)
 
+viewHome.get().useButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        turtle.place()
+    end
+end)
+
+viewHome.get().digButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        turtle.dig()
+    end
+end)
+
+viewHome.get().dropButton:onClick(function(self, event, button, x, y)
+    dropButton(self, event, button)
+end)
+
 --- HOME MENU START END ---
 
 ----- MOVE MENU START -----
@@ -1071,15 +1166,16 @@ local function digCheckboxChange(self)
     end
     settingsUtil.set(PROG_SETTINGS.moveDig, currentSettings.moveDig)
 end
-viewControl.getMoveButtons().digCheckbox:onChange(digCheckboxChange)
+viewControl.get().digCheckbox:onChange(digCheckboxChange)
 
-viewControl.getMoveButtons().moveAmountResetButton:onClick(function(self, event, button, x, y)
+viewControl.get().moveAmountResetButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
-        viewControl.getMoveButtons().moveAmountInput:setValue("1")
-        viewControl.getMoveButtons().digCheckbox:setValue(false)
+        viewControl.get().moveAmountInput:setValue("1")
+        viewControl.get().digCheckbox:setValue(false)
         settingsUtil.set(PROG_SETTINGS.moveCommand, "")
         settingsUtil.set(PROG_SETTINGS.moveAmount, 1)
         settingsUtil.set(PROG_SETTINGS.moveDig, false)
+        currentSettings.moveAmount = 1
     end
 end)
 
@@ -1087,42 +1183,37 @@ local function setMoveAmount(_value)
     if _value <= 1000 and _value >= 1 then
         currentSettings.moveAmount = _value
         settingsUtil.set(PROG_SETTINGS.moveAmount, _value)
-        viewControl.getMoveButtons().moveAmountInput:setValue(_value)
+        viewControl.get().moveAmountInput:setValue(_value)
     end
 end
 
-viewControl.getMoveButtons().moveAmountAddButton:onClick(function(self, event, button, x, y)
+viewControl.get().moveAmountAddButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             setMoveAmount(math.min(currentSettings.moveAmount + 1, digUtil.CONST.DIG_MAX))
-            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 1)
         elseif (button == 2) then
             setMoveAmount(math.min(currentSettings.moveAmount + 5, digUtil.CONST.DIG_MAX))
-            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) + 5)
         end
     end
 end)
 
-viewControl.getMoveButtons().moveAmountSubButton:onClick(function(self, event, button, x, y)
+viewControl.get().moveAmountSubButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             setMoveAmount(math.max(currentSettings.moveAmount - 1, digUtil.CONST.DIG_MIN))
-            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 1)
         elseif (button == 2) then
             setMoveAmount(math.max(currentSettings.moveAmount - 5, digUtil.CONST.DIG_MIN))
-            -- setMoveAmount(settingsUtil.get(PROG_SETTINGS.moveAmount) - 5)
         end
     end
 end)
 
 local function doMove()
-    local amount = viewControl.getMoveButtons().moveAmountInput:getValue()
+    local amount = viewControl.get().moveAmountInput:getValue()
     settingsUtil.set(PROG_SETTINGS.moveAmount, amount)
-    addLog(log, amount)
     startMoveThread()
 end
 
-viewControl.getMoveButtons().forwardButton:onClick(function(self, event, button, x, y)
+viewControl.get().forwardButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "forward")
@@ -1133,7 +1224,7 @@ viewControl.getMoveButtons().forwardButton:onClick(function(self, event, button,
     end
 end)
 
-viewControl.getMoveButtons().backwardButton:onClick(function(self, event, button, x, y)
+viewControl.get().backwardButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "back")
@@ -1144,7 +1235,7 @@ viewControl.getMoveButtons().backwardButton:onClick(function(self, event, button
     end
 end)
 
-viewControl.getMoveButtons().upButton:onClick(function(self, event, button, x, y)
+viewControl.get().upButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "up")
@@ -1155,7 +1246,7 @@ viewControl.getMoveButtons().upButton:onClick(function(self, event, button, x, y
     end
 end)
 
-viewControl.getMoveButtons().downButton:onClick(function(self, event, button, x, y)
+viewControl.get().downButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "down")
@@ -1166,7 +1257,7 @@ viewControl.getMoveButtons().downButton:onClick(function(self, event, button, x,
     end
 end)
 
-viewControl.getMoveButtons().shiftLeftButton:onClick(function(self, event, button, x, y)
+viewControl.get().shiftLeftButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_left")
@@ -1177,7 +1268,7 @@ viewControl.getMoveButtons().shiftLeftButton:onClick(function(self, event, butto
     end
 end)
 
-viewControl.getMoveButtons().shiftRightButton:onClick(function(self, event, button, x, y)
+viewControl.get().shiftRightButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "shift_right")
@@ -1188,7 +1279,7 @@ viewControl.getMoveButtons().shiftRightButton:onClick(function(self, event, butt
     end
 end)
 
-viewControl.getMoveButtons().turnLeftButton:onClick(function(self, event, button, x, y)
+viewControl.get().turnLeftButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_left")
@@ -1199,7 +1290,7 @@ viewControl.getMoveButtons().turnLeftButton:onClick(function(self, event, button
     end
 end)
 
-viewControl.getMoveButtons().turnRightButton:onClick(function(self, event, button, x, y)
+viewControl.get().turnRightButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") then
         if (button == 1) then
             settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_right")
@@ -1208,6 +1299,22 @@ viewControl.getMoveButtons().turnRightButton:onClick(function(self, event, butto
         end
         doMove()
     end
+end)
+
+viewControl.get().useButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        turtle.place()
+    end
+end)
+
+viewControl.get().digButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        turtle.dig()
+    end
+end)
+
+viewControl.get().dropButton:onClick(function(self, event, button, x, y)
+    dropButton(self, event, button)
 end)
 
 ----- MOVE MENU END -----

@@ -1,8 +1,10 @@
 local programInfo = {
     name = "digOSRemoteViewControl",
-    version = "1.0.1",
+    version = "1.0.2",
     author = "ChefMooon"
 }
+
+local basaltUtil = require("mooonOS/common/basaltUtil")
 
 --PROGRAM TODO--
 -- refactor, variables can be made into tables
@@ -147,26 +149,24 @@ end
 function view.init(frame, currentSettings, theme)
     moveInputFrame = frame:addFrame():setPosition(1, 2):setSize(16, "{parent.h-3}")
 
-    moveInputFrameLabel = moveInputFrame:addLabel():setText("Move"):setPosition(7, 1)
-
-    digOptionFrame = moveInputFrame:addFrame():setPosition(10, 7):setSize(7, 1):setBackground(colors.gray):setForeground(colors.black)
+    digOptionFrame = moveInputFrame:addFrame():setPosition(10, 5):setSize(7, 1):setBackground(colors.gray):setForeground(colors.black)
     digCheckBoxLabel = digOptionFrame:addLabel():setText("Dig"):setPosition(4, 1)
     digCheckbox = digOptionFrame:addCheckbox():setPosition(2, 1):setBackground(colors.black):setForeground(colors.lightGray):setValue(currentSettings.moveDig)
 
-    moveAmountInput = moveInputFrame:addInput():setPosition(6, 9):setSize(7, 1):setInputType("number"):setInputLimit(4):setValue(currentSettings.moveAmount)
+    moveAmountInput = moveInputFrame:addInput():setPosition(6, 7):setSize(7, 1):setInputType("number"):setInputLimit(4):setValue(currentSettings.moveAmount)
 
-    moveAmountResetButton = moveInputFrame:addButton():setText("RESET"):setPosition(1,"{parent.h-1}"):setSize(5,1)
-    moveAmountSubButton = moveInputFrame:addButton():setText("\0\17\0"):setPosition(2, 9):setSize(3, 1)
-    moveAmountAddButton = moveInputFrame:addButton():setText("\0\16\0"):setPosition(14, 9):setSize(3, 1)
+    moveAmountResetButton = moveInputFrame:addButton():setText("RESET"):setPosition(1,"{parent.h-1}"):setSize(5,1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    moveAmountSubButton = moveInputFrame:addButton():setText("\0\17\0"):setPosition(2, 7):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    moveAmountAddButton = moveInputFrame:addButton():setText("\0\16\0"):setPosition(14, 7):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
-    forwardButton = moveInputFrame:addButton():setText("\30"):setPosition(6, 3):setSize(3, 1)
-    backwardButton = moveInputFrame:addButton():setText("\31"):setPosition(6, 5):setSize(3, 1)
-    upButton = moveInputFrame:addButton():setText("\24"):setPosition(14, 3):setSize(3, 1)
-    downButton = moveInputFrame:addButton():setText("\25"):setPosition(14, 5):setSize(3, 1)
-    shiftLeftButton = moveInputFrame:addButton():setText("\171"):setPosition(2, 7):setSize(3, 1)
-    shiftRightButton = moveInputFrame:addButton():setText("\187"):setPosition(5, 7):setSize(3, 1)
-    turnLeftButton = moveInputFrame:addButton():setText("\17"):setPosition(2, 4):setSize(3, 1)
-    turnRightButton = moveInputFrame:addButton():setText("\16"):setPosition(10, 4):setSize(3, 1)
+    forwardButton = moveInputFrame:addButton():setText("\30"):setPosition(6, 1):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    backwardButton = moveInputFrame:addButton():setText("\31"):setPosition(6, 3):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    upButton = moveInputFrame:addButton():setText("\24"):setPosition(14, 1):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    downButton = moveInputFrame:addButton():setText("\25"):setPosition(14, 3):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    shiftLeftButton = moveInputFrame:addButton():setText("\171"):setPosition(2, 5):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    shiftRightButton = moveInputFrame:addButton():setText("\187"):setPosition(5, 5):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    turnLeftButton = moveInputFrame:addButton():setText("\17"):setPosition(2, 2):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    turnRightButton = moveInputFrame:addButton():setText("\16"):setPosition(10, 2):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     -- view.initInventoryControl(frame) -- TODO: review how this will work. is it needed?
 

@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSViewSettings",
-    version = "V1.0.2",
+    version = "1.0.3",
     author = "ChefMooon"
 }
 
@@ -26,11 +26,6 @@ function view.init(frame, turtleInfo, rednetInfo, programInfo, theme)
 
     components.homeNetworkOffButton = components.homeNetworkFrame:addButton():setText("off"):setPosition(1,3):setSize(5,1):setForeground(theme.networkFalse)
     components.homeNetworkOnButton = components.homeNetworkFrame:addButton():setText("on"):setPosition(6,3):setSize(5,1):setForeground(theme.networkFalse)
-
-    components.programInfoFrame = components.settingsFrame:addFrame():setPosition(2,7):setSize(20,3)
-
-    components.programInfoLabel = components.programInfoFrame:addLabel():setText("Program Info"):setPosition(1,1):setSize("{parent.w-1}",1)
-    components.programNameLabel = components.programInfoFrame:addLabel():setText("Version:"..programInfo.version):setPosition(1,2):setSize("{parent.w-1}",1)
 end
 
 function view.initHomeNetworkOffOnButtons(offButtonColor, onButtonColor)

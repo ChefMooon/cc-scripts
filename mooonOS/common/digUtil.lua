@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digUtil",
-    version = "1.0.1",
+    version = "1.0.2",
     author = "ChefMooon"
 }
 
@@ -205,6 +205,70 @@ function digUtil.digArgsTableToString(digArgs)
         tostring(digArgs.blockWhiteList),
         tostring(digArgs.blockBlackList)
     }, " ")
+end
+
+function digUtil.dropAllItems()
+    local initialSlot = turtle.getSelectedSlot()
+    for i = 1, 16 do
+        turtle.select(i)
+        turtle.drop()
+    end
+    turtle.select(initialSlot)
+end
+
+function digUtil.dropAllItemsUp()
+    local initialSlot = turtle.getSelectedSlot()
+    for i = 1, 16 do
+        turtle.select(i)
+        turtle.dropUp()
+    end
+    turtle.select(initialSlot)
+end
+
+function digUtil.dropAllItemsDown()
+    local initialSlot = turtle.getSelectedSlot()
+    for i = 1, 16 do
+        turtle.select(i)
+        turtle.dropDown()
+    end
+    turtle.select(initialSlot)
+end
+
+function digUtil.dropAllItemsWithFilter(validSorageTags, validTorchNames, digArgs)
+    local initialSlot = turtle.getSelectedSlot()
+    for i = 1, 16 do
+        turtle.select(i)
+        local item = turtle.getItemDetail()
+        if item ~= nil then
+            local drop = true
+            if digArgs.torch.torch then
+                if i == digArgs.torch.slot then
+                    for _, name in ipairs(validTorchNames) do
+                        if item.name == name then
+                            drop = false
+                        end
+                    end
+                else
+                    turtle.transferTo(digArgs.torch.slot)
+                end
+            end
+            if digArgs.chest.chest then
+                if i == digArgs.chest.slot then
+                    for _, storageTag in ipairs(validSorageTags) do
+                        if item.name == storageTag then
+                            drop = false
+                        end
+                    end
+                else
+                    turtle.transferTo(digArgs.chest.slot)
+                end
+            end
+            if drop then
+                turtle.drop()
+            end
+        end
+    end
+    turtle.select(initialSlot)
 end
 
 return digUtil

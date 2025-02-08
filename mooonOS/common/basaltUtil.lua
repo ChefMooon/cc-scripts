@@ -1,6 +1,6 @@
 local programInfo = {
     name = "basaltUtil",
-    version = "1.0.0",
+    version = "1.0.1",
     author = "ChefMooon"
 }
 
@@ -14,7 +14,19 @@ local function buttonRelease(self)
     self:setBackground(colors.gray)
 end
 
+
+
 local basaltUtil = {}
+
+function basaltUtil.buttonThemeOnClick(self, theme)
+    self:setBackground(theme.buttonPressed)
+    self:setForeground(theme.buttonForeground)
+end
+
+function basaltUtil.buttonThemeOnRelease(self, theme)
+    self:setBackground(theme.buttonBackground)
+    self:setForeground(theme.buttonForeground)
+end
 
 basaltUtil.userValidation = {
     frame,

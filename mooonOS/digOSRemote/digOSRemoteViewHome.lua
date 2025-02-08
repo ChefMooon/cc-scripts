@@ -1,14 +1,13 @@
 local programInfo = {
     name = "digOSRemoteViewHome",
-    version = "1.0.1",
+    version = "1.0.3",
     author = "ChefMooon"
 }
 
 local digUtil = require("mooonOS/common/digUtil")
+local basaltUtil = require("mooonOS/common/basaltUtil")
 
 local view = {}
-
-local homeFrame
 
 local logFrame
 local logLabel
@@ -38,16 +37,6 @@ local clipboardGUI = {}
 local inventoryControllerGUI = {
     inventorySlotSelect = {}
 }
-
-local function onClickTheme(self)
-    self:setBackground(colors.yellow)
-    self:setForeground(colors.black)
-end
-
-local function onReleaseTheme(self)
-    self:setBackground(colors.gray)
-    self:setForeground(colors.black)
-end
 
 local function getOffsetValue()
     if basicDigSettingsGUI.offsetLeftButton:getForeground() == colors.black then
@@ -105,18 +94,18 @@ function view.initBasicDigSettingsGUI(frame, digArgs, homeUIInfo, theme)
 
     basicDigSettingsGUI.lengthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("L:"):setPosition(1, 2)
     basicDigSettingsGUI.lengthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 2):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.length)
-    basicDigSettingsGUI.lengthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.lengthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 2):setSize(2, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    basicDigSettingsGUI.lengthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 2):setSize(2, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     basicDigSettingsGUI.widthInputLabel = basicDigSettingsGUI.frame:addLabel():setText("W:"):setPosition(1, 3)
     basicDigSettingsGUI.widthInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 3):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.width)
-    basicDigSettingsGUI.widthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.widthSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 3):setSize(2, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    basicDigSettingsGUI.widthAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 3):setSize(2, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     basicDigSettingsGUI.heightInputLabel = basicDigSettingsGUI.frame:addLabel():setText("H:"):setPosition(1, 4)
     basicDigSettingsGUI.heightInput = basicDigSettingsGUI.frame:addInput():setPosition(3, 4):setSize(5, 1):setInputType("number"):setInputLimit(4):setValue(digArgs.height)
-    basicDigSettingsGUI.heightSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    basicDigSettingsGUI.heightSubButton = basicDigSettingsGUI.frame:addButton():setText("\17"):setPosition(9, 4):setSize(2, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    basicDigSettingsGUI.heightAddButton = basicDigSettingsGUI.frame:addButton():setText(" \16"):setPosition(11, 4):setSize(2, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     basicDigSettingsGUI.offsetLeftButton = basicDigSettingsGUI.frame:addButton():setText("\171"):setPosition(14, 2):setSize(1, 1):setForeground(colors.lightGray)
     basicDigSettingsGUI.offsetRightButton = basicDigSettingsGUI.frame:addButton():setText("\187"):setPosition(15, 2):setSize(1, 1)
@@ -208,8 +197,10 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
     advancedDigSettingsGUI.chestSlotIncreaseButton = advancedDigSettingsGUI.chestSlotFrame:addButton():setText("\16"):setPosition(6, 1):setSize(1, 1)
     advancedDigSettingsGUI.chestSlotLabel = advancedDigSettingsGUI.chestSlotFrame:addLabel():setText("CSlot"):setPosition(7, 1)
 
-    components.timeEstimateButton = advancedDigSettingsGUI.frame:addButton():setText("TIME"):setSize(4, 1):setPosition(1, 5):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    components.torchEstimateButton = advancedDigSettingsGUI.frame:addButton():setText("TORCH"):setSize(5, 1):setPosition(6, 5):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    components.timeEstimateButton = advancedDigSettingsGUI.frame:addButton():setText("TIME"):setSize(4, 1):setPosition(1, 5):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    components.torchEstimateButton = advancedDigSettingsGUI.frame:addButton():setText("TORCH"):setSize(5, 1):setPosition(6, 5):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+
+    components.dropAllButton = advancedDigSettingsGUI.frame:addButton():setText("DROP ALL"):setSize(8, 1):setPosition(2, 6):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     advancedDigSettingsGUI.torchDistanceDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
@@ -220,7 +211,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
                 advancedDigSettingsGUI.torchDistanceInput:setValue(digUtil.CONST.TORCH_SPACING_MIN)
             end
         end
-    end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     advancedDigSettingsGUI.torchDistanceIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchDistanceInput:getValue()) + getNumberChange(button)
@@ -230,7 +221,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
                 advancedDigSettingsGUI.torchDistanceInput:setValue(digUtil.CONST.TORCH_SPACING_MAX)
             end
         end
-    end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     advancedDigSettingsGUI.torchSlotDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
@@ -241,7 +232,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
                 advancedDigSettingsGUI.torchSlotInput:setValue(1)
             end
         end
-    end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     advancedDigSettingsGUI.torchSlotIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.torchSlotInput:getValue()) + getNumberChange(button)
@@ -251,7 +242,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
                 advancedDigSettingsGUI.torchSlotInput:setValue(16)
             end
         end
-    end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     advancedDigSettingsGUI.chestSlotDecreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
@@ -262,7 +253,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
                 advancedDigSettingsGUI.chestSlotInput:setValue(1)
             end
         end
-    end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     advancedDigSettingsGUI.chestSlotIncreaseButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") then
             local value = tonumber(advancedDigSettingsGUI.chestSlotInput:getValue()) + getNumberChange(button)
@@ -272,7 +263,7 @@ function view.initAdvancedDigSettingsGUI(frame, digArgs, theme)
                 advancedDigSettingsGUI.chestSlotInput:setValue(16)
             end
         end
-    end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
 end
 
@@ -301,9 +292,9 @@ function view.initSavedGUI(frame, homeUIInfo, theme)
     savedGUI.saved4Button = savedGUI.frame:addButton():setText("4"):setPosition(8,1):setSize(1,1):setForeground(homeUIInfo.saved4ButtonColor)
     savedGUI.saved5Button = savedGUI.frame:addButton():setText("5"):setPosition(10,1):setSize(1,1):setForeground(homeUIInfo.saved5ButtonColor)
 
-    savedGUI.loadSavedButton = savedGUI.frame:addButton():setText("LOAD"):setPosition(2,2):setSize(4,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    savedGUI.saveSavedButton = savedGUI.frame:addButton():setText("SAVE"):setPosition(7,2):setSize(4,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    savedGUI.resetSavedButton = savedGUI.frame:addButton():setText("RESET"):setPosition(4,3):setSize(5,1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    savedGUI.loadSavedButton = savedGUI.frame:addButton():setText("LOAD"):setPosition(2,2):setSize(4,1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    savedGUI.saveSavedButton = savedGUI.frame:addButton():setText("SAVE"):setPosition(7,2):setSize(4,1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    savedGUI.resetSavedButton = savedGUI.frame:addButton():setText("RESET"):setPosition(4,3):setSize(5,1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 end
 
 function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, theme)
@@ -312,13 +303,13 @@ function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, them
     inventoryControllerGUI.directionButtonFrame = inventoryControllerGUI.frame:addFrame():setPosition(2, 1):setSize(3, 3)
 
     inventoryControllerGUI.northButton = inventoryControllerGUI.directionButtonFrame:addButton():setText("\30"):setPosition(2, 1):setSize(1, 1)
-        :onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+        :onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     inventoryControllerGUI.eastButton = inventoryControllerGUI.directionButtonFrame:addButton():setText("\16"):setPosition(3, 2):setSize(1, 1)
-        :onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+        :onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     inventoryControllerGUI.southButton = inventoryControllerGUI.directionButtonFrame:addButton():setText("\31"):setPosition(2, 2):setSize(1, 1)
-        :onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+        :onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     inventoryControllerGUI.westButton = inventoryControllerGUI.directionButtonFrame:addButton():setText("\17"):setPosition(1, 2):setSize(1, 1)
-        :onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+        :onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     inventoryControllerGUI.northButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
@@ -341,9 +332,9 @@ function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, them
         end
     end)
 
-    inventoryControllerGUI.useButton = inventoryControllerGUI.frame:addButton():setText("USE"):setPosition(6, 1):setSize(3, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    inventoryControllerGUI.digButton = inventoryControllerGUI.frame:addButton():setText("DIG"):setPosition(9, 1):setSize(3, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    inventoryControllerGUI.dropButton = inventoryControllerGUI.frame:addButton():setText("DROP"):setPosition(7, 2):setSize(4, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    inventoryControllerGUI.useButton = inventoryControllerGUI.frame:addButton():setText("USE"):setPosition(6, 1):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    inventoryControllerGUI.digButton = inventoryControllerGUI.frame:addButton():setText("DIG"):setPosition(9, 1):setSize(3, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    inventoryControllerGUI.dropButton = inventoryControllerGUI.frame:addButton():setText("DROP"):setPosition(7, 2):setSize(4, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
     inventoryControllerGUI.useButton:onClick(function(self, event, button, x, y)
         if (event == "mouse_click") and (button == 1) then
@@ -406,7 +397,7 @@ function view.initAdvanedInventoryControllerGUI(frame, homeUIInfo, digArgs, them
             if (event == "mouse_click") and (button == 1) then
                 trySlotSelect(tonumber(self:getText()))
             end
-        end):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+        end):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
     end
 end
 
@@ -477,27 +468,27 @@ function view.initAdvancedSettingsSelectionGUI(frame, homeUIInfo, digArgs, theme
 end
 
 function view.init(frame, info, digArgs, homeUIInfo, rednetInfo, theme)
-    homeFrame = frame:addScrollableFrame():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-2}")
+    components.homeFrame = frame:addScrollableFrame():setPosition(1, 1):setSize("{parent.w-2}", "{parent.h-2}")
 
     logFrame = frame:addFrame():setPosition(1, 14):setSize("{parent.w}", 6)
     logLabel = logFrame:addLabel():setText("Log:"):setPosition(1, 1)
     logList = logFrame:addList():setPosition(1, 2):setSize("{parent.w}", 5)
 
-    view.initBasicDigSettingsGUI(homeFrame, digArgs, homeUIInfo, theme)
+    view.initBasicDigSettingsGUI(components.homeFrame, digArgs, homeUIInfo, theme)
     -- view.initAdvancedDigSettings(sub, digArgs, theme)
 
-    view.initAdvancedDigSettingsGUI(homeFrame, digArgs, theme)
+    view.initAdvancedDigSettingsGUI(components.homeFrame, digArgs, theme)
 
-    view.initSavedGUI(homeFrame, homeUIInfo, theme)
+    view.initSavedGUI(components.homeFrame, homeUIInfo, theme)
 
-    -- view.initAdvanedInventoryControllerGUI(homeFrame, homeUIInfo, digArgs, theme)
+    -- view.initAdvanedInventoryControllerGUI(components.homeFrame, homeUIInfo, digArgs, theme)
 
-    view.initAdvancedSettingsSelectionGUI(homeFrame, homeUIInfo, digArgs, theme)
+    view.initAdvancedSettingsSelectionGUI(components.homeFrame, homeUIInfo, digArgs, theme)
 
-    mainButtonFrame.buttonFrame = homeFrame:addFrame():setPosition(2,7):setSize(5,2)
+    mainButtonFrame.buttonFrame = components.homeFrame:addFrame():setPosition(2,7):setSize(5,2)
 
-    mainButtonFrame.runButton = mainButtonFrame.buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
-    mainButtonFrame.resetButton = mainButtonFrame.buttonFrame:addButton():setText("RESET"):setSize(5, 1):setPosition(1, 2):onClick(function(self)onClickTheme(self)end):onRelease(function(self)onReleaseTheme(self)end)
+    mainButtonFrame.runButton = mainButtonFrame.buttonFrame:addButton():setText("RUN"):setSize(5, 1):setPosition(1, 1):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+    mainButtonFrame.resetButton = mainButtonFrame.buttonFrame:addButton():setText("RESET"):setSize(5, 1):setPosition(1, 2):onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
 
 end
 

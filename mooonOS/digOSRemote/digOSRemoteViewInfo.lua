@@ -1,8 +1,10 @@
 local programInfo = {
     name = "digOSRemoteViewInfo",
-    version = "1.0.3",
+    version = "1.0.4",
     author = "ChefMooon"
 }
+
+local basaltUtil = require("mooonOS/common/basaltUtil")
 
 --- LOCAL FUNCTIONS
 
@@ -35,17 +37,22 @@ function view.initTurtleDetailGUI(frame, theme)
 
 end
 
+function view.initButtonGUI(frame, theme)
+    components.buttonFrame = frame:addFrame():setPosition(1,3):setSize("{parent.w}", 3)
+    components.refreshTurtleInfoButton = components.buttonFrame:addButton():setText("\7"):setPosition("{parent.w-6}", 1):setSize(3, 1)
+        :setBackground(theme.buttonBackground):setForeground(theme.buttonForeground)
+        :onClick(function(self)basaltUtil.buttonThemeOnClick(self, theme)end):onRelease(function(self)basaltUtil.buttonThemeOnRelease(self, theme)end)
+end
+
 function view.initTurtleListGUI(frame, theme)
     components.turtleListFrame = frame:addFrame():setPosition(1,4):setSize("{parent.w}", "{parent.h-5}")
     components.turtleListScrollableFrame = components.turtleListFrame:addScrollableFrame():setPosition(1,1):setSize("{parent.w-3}", "{parent.h-3}"):setDirection("vertical"):setBackground(theme.background)
-
-
-
 end
 
 function view.init(frame, info, rednetInfo, theme)
     components.frame = frame:addFrame():setPosition(1,2):setSize("{parent.w}", "{parent.h}")
 
+    view.initButtonGUI(components.frame, theme)
     view.initTurtleListGUI(components.frame, theme)
 end
 

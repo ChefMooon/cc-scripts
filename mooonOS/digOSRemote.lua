@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSRemote",
-    version = "2.0.3",
+    version = "2.0.4",
     author = "ChefMooon"
 }
 
@@ -15,7 +15,10 @@ local defaultTheme = {
     networkTrue = colors.black,
     networkFalse = colors.lightGray,
     savedDataTrue = colors.yellow,
-    savedDataFalse = colors.black
+    savedDataFalse = colors.black,
+    buttonForeground = colors.black,
+    buttonBackground = colors.gray,
+    buttonPressed = colors.yellow
 }
 
 ----- REQUIRE START -----
@@ -50,6 +53,7 @@ end
 local settingsUtil = mooonUtil.getProgram(mooonUtil.lib.common.settingsUtil.path)
 local rednetUtil = mooonUtil.getProgram(mooonUtil.lib.common.rednetUtil.path)
 local digUtil = mooonUtil.getProgram(mooonUtil.lib.common.digUtil.path)
+local basaltUtil = mooonUtil.getProgram(mooonUtil.lib.common.basaltUtil.path)
 
 local digOSUtil = mooonUtil.getProgram(mooonUtil.lib.digOS.digOSUtil.path)
 
@@ -104,12 +108,6 @@ local savedSelection = 0
 
 local clipboard = ""
 
--- Move Options
--- TODO: Refactor me to currentSettings.*
-local moveCommand = ""
-local moveAmount = 1
-local moveDig = false
-
 -- Rednet Info
 local rednetInfo = {
     programName = broadcastFilter,
@@ -157,7 +155,8 @@ local currentSettings = {
     saved5 = settingsUtil.get(PROG_SETTINGS.saved5),
     moveCommand = moveDefaultSettings.moveCommand,
     moveAmount = moveDefaultSettings.moveAmount,
-    moveDig = moveDefaultSettings.moveDig
+    moveDig = moveDefaultSettings.moveDig,
+    confirmChoice = false
 }
 
 if currentSettings.saved1 == nil then settingsUtil.set(PROG_SETTINGS.saved1, "") end
@@ -203,6 +202,18 @@ end
 
 local function initConnectedTurtleInfo()
     rednet.broadcast({ command = "digOSRemote_startup_info" }, rednetUtil.getProtocol(rednetInfo).."_info")
+end
+
+local function updateConnectedTurtleInfo()
+    rednet.broadcast({ command = "digOSRemote_update_info" }, rednetUtil.getProtocol(rednetInfo).."_info")
+end
+
+local function broadcastDropAllItems()
+    rednet.broadcast({ command = "digOSRemote_drop_all_items" }, rednetUtil.getProtocol(rednetInfo))
+end
+
+local function broadcastDropAllItemsUp()
+    rednet.broadcast({ command = "digOSRemote_drop_all_items_up" }, rednetUtil.getProtocol(rednetInfo))
 end
 
 -- local function updateConnectedTurtles()
@@ -382,7 +393,8 @@ viewInfo.init(sub["Info"], computerInfo, rednetInfo, defaultTheme)
 
 --- SETTINGS START ---
 
-viewSettings.init(sub["Adv"], computerInfo, rednetInfo, defaultTheme)
+viewSettings.init(sub["Adv"], computerInfo, rednetInfo, programInfo, defaultTheme)
+viewSettings.initHomeNetworkOffOnButtons(digOSUtil.getNetworkOffButtonColor(rednetInfo, defaultTheme), digOSUtil.getNetworkOnButtonColor(rednetInfo, defaultTheme))
 
 --- SETTINGS END ---
 
@@ -582,7 +594,6 @@ end
 local function sendGetTorchEsitmateCommand()
     local message = viewHome.getDigArgsFromUI()
     message.command = "torch"
-    -- rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
     for k, v in pairs(connectedTurtleInfo) do
         rednet.send(k, message, rednetUtil.getProtocol(rednetInfo))
         break
@@ -624,6 +635,31 @@ end)
 viewHome.get().torchEstimateButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
         sendGetTorchEsitmateCommand()
+    end
+end)
+
+viewHome.get().dropAllButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") then
+        if button == 1 or button == 3 then
+            if not currentSettings.confirmChoice then
+                currentSettings.confirmChoice = true
+                addLog(log, "\0Right Click to Cancel")
+                addLog(log, "Click Again to Confirm.")
+            else
+                if button == 1 then
+                    currentSettings.confirmChoice = false
+                    broadcastDropAllItems()
+                    addLog(log, "Drop All Items Cmd Sent.")
+                elseif button == 3 then
+                    currentSettings.confirmChoice = false
+                    broadcastDropAllItemsUp()
+                    addLog(log, "Drop All Items Up Cmd Sent.")
+                end
+            end
+        elseif button == 2 and currentSettings.confirmChoice then
+            currentSettings.confirmChoice = false
+            addLog(log, "Drop All Items Canceled.")
+        end
     end
 end)
 
@@ -698,6 +734,7 @@ local function stopRednet()
     if rednetInfo.rednetOpen then
         rednetInfo.rednetOpen = false
         setRednetStatus(rednetInfo.rednetOpen)
+        viewSettings.toggleNetworkButtons(rednetInfo.rednetOpen, defaultTheme)
         rednet.close()
         --rednetThread:stop()
         stopUpdateThread()
@@ -710,6 +747,7 @@ local function startRednet()
     if not rednetInfo.rednetOpen then
         rednetInfo.rednetOpen = true
         setRednetStatus(rednetInfo.rednetOpen)
+        viewSettings.toggleNetworkButtons(rednetInfo.rednetOpen, defaultTheme)
         rednetInfo.modem = peripheral.find("modem", rednet.open)
         if rednetInfo.rednetID ~= viewSettings.get().homeNetworkID:getValue() then
             rednetInfo.rednetID = viewSettings.get().homeNetworkID:getValue()
@@ -740,6 +778,20 @@ local function toggleRednet()
     menubarRednetStatusButton:setBackground(digOSUtil.getMenubarRednetStatusButtonColor(rednetInfo, defaultTheme))
 end
 
+viewSettings.get().homeNetworkOffButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        stopRednet()
+        menubarRednetStatusButton:setBackground(digOSUtil.getMenubarRednetStatusButtonColor(rednetInfo, defaultTheme))
+    end
+end)
+
+viewSettings.get().homeNetworkOnButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        startRednet()
+        menubarRednetStatusButton:setBackground(digOSUtil.getMenubarRednetStatusButtonColor(rednetInfo, defaultTheme))
+    end
+end)
+
 menubarRednetStatusButton:onClick(function(self, event, button, x, y)
     if (event == "mouse_click") and (button == 1) then
         toggleRednet()
@@ -752,7 +804,6 @@ local function sendMoveCommand()
     currentSettings.moveCommand = settingsUtil.get(PROG_SETTINGS.moveCommand)
     local message = { command = "move", moveAmount = currentSettings.moveAmount, moveCommand = currentSettings.moveCommand, moveDig = currentSettings.moveDig }
     rednet.broadcast(message, rednetUtil.getProtocol(rednetInfo))
-    addLog(log, tostring(currentSettings.moveAmount))
     addLog(log, "move command sent")
     os.sleep(1) -- allow final update to arrive
 end
@@ -780,9 +831,10 @@ viewControl.getMoveButtons().moveAmountResetButton:onClick(function(self, event,
     if (event == "mouse_click") and (button == 1) then
         viewControl.getMoveButtons().moveAmountInput:setValue("1")
         viewControl.getMoveButtons().digCheckbox:setValue(false)
-        moveCommand = ""
         currentSettings.moveAmount = 1
-        moveDig = false
+        settingsUtil.set(PROG_SETTINGS.moveCommand, "")
+        settingsUtil.set(PROG_SETTINGS.moveAmount, 1)
+        settingsUtil.set(PROG_SETTINGS.moveDig, false)
     end
 end)
 
@@ -899,6 +951,16 @@ viewControl.getMoveButtons().turnRightButton:onClick(function(self, event, butto
             settingsUtil.set(PROG_SETTINGS.moveCommand, "turn_right_once")
         end
         doMove()
+    end
+end)
+
+--- MOVE END (Backend) ---
+
+--- MOVE START (Backend) ---
+
+viewInfo.get().refreshTurtleInfoButton:onClick(function(self, event, button, x, y)
+    if (event == "mouse_click") and (button == 1) then
+        updateConnectedTurtleInfo()
     end
 end)
 

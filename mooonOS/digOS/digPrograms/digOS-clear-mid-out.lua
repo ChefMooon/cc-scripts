@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS-clear-mid-out",
-    version = "1.1.3",
+    version = "1.1.4",
     author = "ChefMooon"
 }
 
@@ -12,6 +12,7 @@ local programInfo = {
 local programName = "digOS-mid-out"
 
 local digOSUtil = require("/mooonOS/digOS/digOSUtil")
+local digUtil = require("/mooonOS/common/digUtil")
 local rednetUtil = require("/mooonOS/common/rednetUtil")
 local settingsUtil = require("/mooonOS/common/settingsUtil")
 
@@ -37,11 +38,13 @@ local availableInventorySlots = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
 -- local inventoryTorchSlot = 16
 -- local inventoryChestSlot = 15
 
+local jobStatistics = digOSUtil.initJobStatistics()
+
 local args = { ... }
 
 local digArgs = digOSUtil.digArgsArgsToTable(programName, args)
 
-local validStorageTags = { "c:chests" }
+local validStorageTags = { "minecraft:chest", "c:chests" }
 local validTorchNames = { "minecraft:torch" }
 
 local errorInfo = {
@@ -87,12 +90,12 @@ local function getElapsedTime()
 end
 
 local function sendCustomJobUpdate(_message, _flag)
-    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, _flag, digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, _flag, digArgs, turtleFuel, layersMined, jobStatistics, textutils.formatTime(jobStartTime), getElapsedTime()))
 end
 
 local function sendJobUpdate(_message)
     sendCustomJobUpdate(_message, "remote")
-    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, "remote", digArgs, turtleFuel, layersMined, blocksMined, textutils.formatTime(jobStartTime), getElapsedTime()))
+    rednetUtil.sendJobUpdate("digOS_job_update", digOSUtil.serializeJobInfo(_message, "remote", digArgs, turtleFuel, layersMined, jobStatistics, textutils.formatTime(jobStartTime), getElapsedTime()))
 end
 
 local function sendOptionalJobUpdate(_message)
@@ -217,10 +220,10 @@ local function startupInventoryCheck()
         return true
     else
         repeat
-            sendJobUpdate("Checking Inventory...")
+            sendLocalJobUpdate("Checking Inventory...")
             if isInventoryEmpty() then
                 inventoryStatus = "checked"
-                sendJobUpdate("Valid Inventory.")
+                sendLocalJobUpdate("Valid Inventory.")
                 return true
             else
                 local result = sendJobInput("Inventory must be empty. Resume?(Y/N)")
@@ -676,6 +679,7 @@ local function initDig(length, width, height, offsetDir, torch, chest, rts)
     local mined = 0
     local ok, err = true, ""
     for i = 1, length do
+        local startBlocksMined = mined
         if zPos == 0 then
             mined = mined + digLayerPattern1("up", length, width, height, offsetDir)
         else
@@ -698,6 +702,9 @@ local function initDig(length, width, height, offsetDir, torch, chest, rts)
             end
         end
         sendOptionalJobUpdate("layer "..tostring(layersMined).." of "..tostring(length).." Complete.")
+        if mined > startBlocksMined and digOSUtil.booleanFromString(digArgs.noPickup) then
+            digUtil.dropAllItemsWithFilter(validStorageTags, validTorchNames, digArgs)
+        end
     end
     zPosReset()
     if rts == "true" then
@@ -735,11 +742,11 @@ if digArgs.command == "run" then
         if startFuelCheck() then
             jobStartTime = os.time("local")
             jobStartTimeEpoch = os.epoch("local")
-            sendJobUpdate("Job Started... Time: ".. getTimeEstimate(digArgs))
-            sendCustomJobUpdate("Job Started... Time: ".. getTimeEstimate(digArgs), "job_start")
+            sendCustomJobUpdate("Job Started... Est. Time: ".. getTimeEstimate(digArgs), "job_start")
             local ok, err = initDig(digArgs.length, digArgs.width, digArgs.height, digArgs.offsetDir, digArgs.torch.torch, digArgs.chest.chest, digArgs.rts)
             if ok then
-                sendJobUpdate("Job Complete. "..tostring(blocksMined).." Blocks Mined.")
+                jobStatistics = digOSUtil.finalizeJobStatistics(jobStatistics, blocksMined, turtle.getFuelLevel())
+                sendCustomJobUpdate("Job Complete. "..tostring(blocksMined).." Blocks Mined.", "job_end")
             else
                 sendJobUpdate("Job Cancelled, "..err)
             end

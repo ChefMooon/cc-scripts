@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOSUtil",
-    version = "1.0.3",
+    version = "1.0.4",
     author = "ChefMooon"
 }
 
@@ -134,14 +134,14 @@ function digOSUtil.digArgsTableToString(digArgs)
     }, " ")
 end
 
-function digOSUtil.serializeJobInfo(message, flag, digArgs, turtleFuel, layersMined, blocksMined, jobStartTime, jobElapsedTime)
+function digOSUtil.serializeJobInfo(message, flag, digArgs, turtleFuel, layersMined, jobStatistics, jobStartTime, jobElapsedTime)
     return {
         message = message,
         flag = flag,
         digArgs = digArgs,
         turtleFuel = turtleFuel,
         layersMined = layersMined,
-        blocksMined = blocksMined,
+        jobStatistics = jobStatistics,
         jobStartTime = jobStartTime,
         jobElapsedTime = jobElapsedTime
     }
@@ -154,7 +154,7 @@ function digOSUtil.serializeJobInfoWithTurtleInfo(jobInfo, turtleInfo)
         digArgs = jobInfo.digArgs,
         turtleFuel = jobInfo.turtleFuel,
         layersMined = jobInfo.layersMined,
-        blocksMined = jobInfo.blocksMined,
+        jobStatistics = jobInfo.jobStatistics,
         jobStartTime = jobInfo.jobStartTime,
         jobElapsedTime = jobInfo.jobElapsedTime,
         turtleInfo = turtleInfo
@@ -291,6 +291,39 @@ function digOSUtil.getDigVariables()
 end
 
 --- DIG PROGRAM UTILS END ---
+
+--- STATISTICS UTILS START ---
+
+function digOSUtil.initJobStatistics()
+    return {
+        startFuel = turtle.getFuelLevel(),
+        blocksMined = 0,
+        fuelConsumed = 0,
+    }
+end
+
+function digOSUtil.updateJobStatistics(jobStatistics, blocksMined, fuelConsumed)
+    jobStatistics.blocksMined = jobStatistics.blocksMined + blocksMined
+    jobStatistics.fuelConsumed = jobStatistics.fuelConsumed + fuelConsumed
+end
+
+function digOSUtil.finalizeJobStatistics(jobStatistics, blocksMined, endFuel)
+    local finalStatistics  = {
+        blocksMined = blocksMined,
+        fuelConsumed = jobStatistics.startFuel - endFuel,
+    }
+    return finalStatistics
+end
+
+function digOSUtil.updateBlocksMined(jobStatistics, blocksMined)
+    jobStatistics.blocksMined = jobStatistics.blocksMined + blocksMined
+end
+
+function digOSUtil.updateFuelConsumed(jobStatistics, fuelConsumed)
+    jobStatistics.fuelConsumed = jobStatistics.fuelConsumed + fuelConsumed
+end
+
+--- STATISTICS UTILS END ---
 
 
 return digOSUtil
