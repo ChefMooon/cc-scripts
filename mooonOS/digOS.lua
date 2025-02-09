@@ -1,6 +1,6 @@
 local programInfo = {
     name = "digOS",
-    version = "2.0.7",
+    version = "2.0.8",
     author = "ChefMooon"
 }
 
@@ -210,6 +210,11 @@ if currentSettings.saved2 == nil then settingsUtil.set(PROG_SETTINGS.saved2, "")
 if currentSettings.saved3 == nil then settingsUtil.set(PROG_SETTINGS.saved3, "") end
 if currentSettings.saved4 == nil then settingsUtil.set(PROG_SETTINGS.saved4, "") end
 if currentSettings.saved5 == nil then settingsUtil.set(PROG_SETTINGS.saved5, "") end
+
+if currentSettings.statistics == nil then
+    settingsUtil.set(PROG_SETTINGS.statistics, defaultStatistics)
+    currentSettings.statistics = defaultStatistics
+end
 
 rednetInfo.rednetID = settingsUtil.get(PROG_SETTINGS.rednetID)
 rednetInfo.rednetStatus = settingsUtil.get(PROG_SETTINGS.rednetStatus)
