@@ -190,7 +190,7 @@ mooonOSUtil.lib = {
 
 function mooonOSUtil.getBasalt(path)
     if not (fs.exists(path)) then
-        shell.run("wget run https://basalt.madefor.cc/install.lua release basalt-1.7.1.lua " .. path)
+        shell.run("wget run https://raw.githubusercontent.com/Pyroxenium/Basalt/refs/heads/master/docs/install.lua release basalt-1.7.1.lua " .. path)
     end
     return require(path:gsub(".lua",""))
 end
