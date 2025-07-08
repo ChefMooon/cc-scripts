@@ -20,6 +20,12 @@ if not (fs.exists(lib.base.mooonUtil.path)) then
 end
 local mooonUtil = require(lib.base.mooonUtil.path:gsub(".lua", ""))
 
+for _, program in pairs(mooonUtil.lib.winchOScmd) do
+    if not (fs.exists(program.path)) then
+        mooonUtil.downloadFile(program.url, program.path)
+    end
+end
+
 for _, program in pairs(mooonUtil.lib.common) do
     if not (fs.exists(program.path)) then
         mooonUtil.downloadFile(program.url, program.path)
