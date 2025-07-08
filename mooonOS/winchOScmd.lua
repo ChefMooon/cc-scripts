@@ -73,7 +73,7 @@ local PROG_SETTING_INFO = {
     terminalType = programInfo.name ..".terminaltype",
     terminalTypeDefault = "noType",
     terminalSecurity = programInfo.name ..".terminalsecurity",
-    terminalSecurityDefault = "W", -- W , M, S
+    terminalSecurityDefault = "W",
     redstoneContactSide = programInfo.name ..".redstonecontactside",
     redstoneContactSideDefault = "back"
 }
@@ -83,7 +83,7 @@ local PROG_SETTINGS = {
     floorNum = settingsUtil.define(programInfo.name, PROG_SETTING_INFO.floorNum, PROG_SETTING_INFO.floorNumDefault),
     terminalType = settingsUtil.define(programInfo.name, PROG_SETTING_INFO.terminalType, PROG_SETTING_INFO.terminalTypeDefault),
     terminalSecurity = settingsUtil.define(programInfo.name, PROG_SETTING_INFO.terminalSecurity, PROG_SETTING_INFO.terminalSecurityDefault),
-    redstoneContactSide = settingsUtil.define(programInfo.name, PROG_SETTING_INFO.redstoneContactSide, PROG_SETTING_INFO.redstoneContactSideDefault),
+    redstoneContactSide = settingsUtil.define(programInfo.name, PROG_SETTING_INFO.redstoneContactSide, PROG_SETTING_INFO.redstoneContactSideDefault)
 }
 
 settings.load()
@@ -130,7 +130,7 @@ function SETTINGS.setAllSettings(elevatorName, floorNum, terminalType, terminalS
     SETTINGS.setFloorNum(floorNum)
     SETTINGS.setTerminalType(terminalType)
     SETTINGS.setTerminalSecurity(terminalSecurity)
-    SETTINGS.setRedstoneContactSide(redstoneContactSide)
+    SETTINGS.setRedstoneContactSide(PROG_SETTING_INFO.redstoneContactSideDefault)
     settings.save()
 end
 
@@ -172,7 +172,7 @@ local function getElevatorLocation(doPrint)
     end
 
     -- If the elevator is at the current floor return floorNum
-    if winchOSUtil.elevatorCheck(SETTINGS.getRedstoneContactSide()) then
+    if winchOSUtil.elevatorCheck(PROG_SETTING_INFO.redstoneContactSideDefault) then
         if doPrint then print("Found. Current Floor.") end
         return SETTINGS.getFloorNum()
     else
@@ -302,7 +302,7 @@ local function getSettingsFromUser()
     end
     newSettings.terminalSecurity = terminalSecurityInput:upper()
 
-    SETTINGS.setAllSettings(newSettings.elevatorName, newSettings.floorNum, newSettings.terminalType, newSettings.terminalSecurity, PROG_SETTING_INFO.redstoneContactSideDefault)
+    setSettings(newSettings.elevatorName, newSettings.floorNum, newSettings.terminalType, newSettings.terminalSecurity)
     return newSettings
 end
 
@@ -401,9 +401,9 @@ end
 ----- End of Startup -----
 
 local function redstonePulse()
-    redstone.setOutput(SETTINGS.getRedstoneContactSide(), true)
+    redstone.setOutput(PROG_SETTING_INFO.redstoneContactSideDefault, true)
     sleep(1)
-    redstone.setOutput(SETTINGS.getRedstoneContactSide(), false)
+    redstone.setOutput(PROG_SETTING_INFO.redstoneContactSideDefault, false)
 end
 
 local function requestFloor(floor)
@@ -427,7 +427,7 @@ local function shutdown()
     for _,monitor in pairs(monitors) do
         monitor.clear()
     end
-    redstone.setOutput("back", false)
+    redstone.setOutput(PROG_SETTING_INFO.redstoneContactSideDefault, false)
 
     print("Shutdown Complete.")
     os.shutdown()
@@ -458,7 +458,7 @@ local function printManual()
 end
 
 local function userInput()
-    redstone.setOutput(SETTINGS.getRedstoneContactSide(), false) -- Reset redstone
+    redstone.setOutput(PROG_SETTING_INFO.redstoneContactSideDefault, false) -- Reset redstone
 
     if terminalType == "floor" then
         printFloorInformation()
@@ -589,7 +589,7 @@ local function update()
 end
 
 local function validRedstoneEvent()
-    return  winchOSUtil.elevatorCheck(SETTINGS.getRedstoneContactSide()) and redstone.getAnalogInput(SETTINGS.getRedstoneContactSide()) < 15
+    return  winchOSUtil.elevatorCheck(PROG_SETTING_INFO.redstoneContactSideDefault) and redstone.getAnalogInput(PROG_SETTING_INFO.redstoneContactSideDefault) < 15
 end
 
 local function redstoneEvent()
@@ -641,7 +641,7 @@ local function updateInfo(message)
     MEMORY.currentFloor = message["floor"]
     MEMORY.totalFloors = message["totalFloors"]
     displaySetup()
-    term.clear()
+    -- term.clear()
 end
 
 local function getFloor(id)
@@ -653,7 +653,7 @@ end
 
 local function getTerminalInfo(id)
     -- TODO: maybe check for nil terminalType? add security level info?
-    local message = { terminalType = SETTTINGS.getTerminalType() }
+    local message = { terminalType = SETTINGS.getTerminalType() }
     rednet.send(id, message, getProtocol())
 end
 
