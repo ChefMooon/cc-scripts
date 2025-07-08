@@ -146,10 +146,10 @@ end
 
 local function getSavedSettings()
     settings.load()
-    elevatorName = settings.get(settingElevatorName)
-    floorNum = settings.get(settingfloorNum)
-    terminalType = settings.get(settingTerminalType)
-    terminalSecurity = settings.get(settingTerminalSecurity)
+    -- elevatorName = settings.get(settingElevatorName)
+    -- floorNum = settings.get(settingfloorNum)
+    -- terminalType = settings.get(settingTerminalType)
+    -- terminalSecurity = settings.get(settingTerminalSecurity)
 end
 
 ------ Program Settings End ------
@@ -163,10 +163,6 @@ local function broadcastMessage(message)
     -- Broadcast a message on the elevatorName protocol
     -- rednet.broadcast(message, rednetUtil.getProtocol(elevatorName))
     rednet.broadcast(message, getProtocol())
-end
-
-local function elevatorCheck()
-    return redstone.getInput(SETTINGS.getRedstoneContactSide())
 end
 
 -- Find the location of the elevator
@@ -306,7 +302,7 @@ local function getSettingsFromUser()
     end
     newSettings.terminalSecurity = terminalSecurityInput:upper()
 
-    SETTINGS.setAllSettings(newSettings.elevatorName, newSettings.floorNum, newSettings.terminalType, newSettings.terminalSecurity)
+    SETTINGS.setAllSettings(newSettings.elevatorName, newSettings.floorNum, newSettings.terminalType, newSettings.terminalSecurity, PROG_SETTING_INFO.redstoneContactSideDefault)
     return newSettings
 end
 
