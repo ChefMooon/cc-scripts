@@ -609,7 +609,10 @@ local function redstoneEvent()
             else
                 MEMORY.elevatorFound = false
             end
-            displaySetup()
+            if MEMORY.elevatorFound then
+                displaySetup()
+                update()
+            end
         end
     end
 end
