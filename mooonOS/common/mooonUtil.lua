@@ -185,6 +185,14 @@ mooonOSUtil.lib = {
             url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/todoOS/todoOSUtil.lua",
             description = "Base utility library for todoOS"
         }
+    },
+    winchOScmd = {
+        winchOSUtil = {
+            filename = "winchOSUtil",
+            path = "mooonOS/winchOS/winchOSUtil.lua",
+            url = "https://raw.githubusercontent.com/ChefMooon/cc-scripts/mooonOS/mooonOS/winchOS/winchOSUtil.lua",
+            description = "Base utility library for winchOS"
+        }
     }
 }
 
