@@ -597,6 +597,12 @@ local function redstoneEvent()
         -- Wait for redstone update
         os.pullEvent("redstone")
 
+        -- Check for left/right signal first for button that will request the elevator to the current floor
+        if (redstone.getInput("left") or redstone.getInput("right")) then
+            requestFloor(SETTINGS.getFloorNum())
+            return
+        end
+
         -- Check the redstone signal is on
         if validRedstoneEvent() then
             MEMORY.currentFloor = SETTINGS.getFloorNum()
