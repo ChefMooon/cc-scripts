@@ -2,7 +2,12 @@
 -- Created by: ChefMooon
 
 -- this will help filter broadcast messages
-local programName = "winchOS"
+local programInfo = {
+    name = "winchOS",
+    version = "0.2.0",
+    author = "ChefMooon"
+}
+local programName = "winchOS" -- TODO: refactor
 
 -- Peripherals
 local monitors = {peripheral.find("monitor")}
