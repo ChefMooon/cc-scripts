@@ -739,6 +739,16 @@ local function controlCycle(dt)
     return
   end
 
+  if craft.calibration == nil then
+    -- No valid calibration yet (first boot / no recoverable file): the craft
+    -- cannot fly. Stay grounded with no thrust and skip the failsafe/PID
+    -- gimbal logic, which both require the resolved gimbal mapping. The
+    -- heartbeat still ticks so the watchdog doesn't fire while the user
+    -- completes calibration in the modal.
+    craft.currentCommonMode = MAX_SIGNAL
+    return
+  end
+
   -- Thrust% slider is rate-limited by RAMP_RATE at all times (see README
   -- "Slider changes"), independent of state, so dragging never jumps thrust.
   craft.targetCommonMode = commonModeSignal(craft.thrustPercent)
