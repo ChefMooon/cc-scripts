@@ -39,7 +39,7 @@ function winchOSUtil.getFloorWithSuffix(floorNum)
     end
 end
 
-function winchOSUtil.elevatorCheck(redstoneContactSide)
+function winchOSUtil.elevatorCheck(redstoneContactSide) -- TODO: not used, remove/refactor?
     return redstone.getInput(redstoneContactSide)
 end
 
