@@ -1344,6 +1344,16 @@ local STATE_COLORS = {
   LANDING = colors.orange, FAILSAFE = colors.red,
 }
 
+-- Basalt 2.5 exposes visibility as the `visible` property (there is no
+-- hide()/show() method as in Basalt 2). These helpers set it and request a
+-- redraw so the change takes effect immediately.
+local function hideEl(el)
+  if el then el.visible = false; if el.markDirty then el:markDirty() end end
+end
+local function showEl(el)
+  if el then el.visible = true; if el.markDirty then el:markDirty() end end
+end
+
 -- Simple blocking-answer helper: creates buttons on `parent`, waits for one
 -- to be clicked, removes them, and returns the chosen value. Runs inside a
 -- basalt.schedule()'d coroutine (see calibration UI below) so it can safely
@@ -1361,7 +1371,7 @@ local function askButtons(parent, y, options)
     x = x + #opt.label + 3
   end
   local _, value = os.pullEvent("bumper_answer")
-  for _, b in ipairs(btns) do b:remove() end
+  for _, b in ipairs(btns) do b:destroy() end
   return value
 end
 
@@ -1447,20 +1457,20 @@ local function buildSettings(frame)
     for _, field in ipairs(labels) do
       frame:addLabel():setText(field):setPosition(x, y)
       local inp = frame:addInput():setPosition(x, y + 1):setSize(6, 1)
-        :setDefaultText(tostring(g[field]))
+        :setText(tostring(g[field]))
       inputs[axis][field] = inp
       x = x + 7
     end
     frame:addLabel():setText("deadzone"):setPosition(x, y)
     local dz = frame:addInput():setPosition(x, y + 1):setSize(6, 1)
-      :setDefaultText(tostring(craft.settings.deadzone[axis]))
+      :setText(tostring(craft.settings.deadzone[axis]))
     inputs[axis].deadzone = dz
     y = y + 3
   end
 
   frame:addLabel():setText("Ramp rate (signal/tick):"):setPosition(2, y)
   local rampInput = frame:addInput():setPosition(26, y):setSize(6, 1)
-    :setDefaultText(tostring(craft.settings.rampRate))
+    :setText(tostring(craft.settings.rampRate))
   y = y + 2
 
   local statusLabel = frame:addLabel():setText(""):setPosition(2, y + 2)
@@ -1469,7 +1479,7 @@ local function buildSettings(frame)
     :setSize(16, 3)
     :onClick(function()
       local function num(inp, fallback)
-        local v = tonumber(inp:getValue())
+        local v = tonumber(inp.text)
         return v or fallback
       end
       local s = craft.settings
@@ -1522,13 +1532,13 @@ end
 
 local function buildFailsafeOverlay(parent)
   local overlay = parent:addFrame()
-    :setPosition(1, 1):setSize("parent.w", "parent.h")
+    :setPosition(1, 1):setSize("{parent.width}", "{parent.height}")
     :setBackground(colors.red)
   overlay:addLabel():setText("FAILSAFE"):setPosition(2, 2):setForeground(colors.white)
-  local reasonLabel = overlay:addLabel():setText(""):setPosition(2, 4):setSize("parent.w - 4", 4)
+  local reasonLabel = overlay:addLabel():setText(""):setPosition(2, 4):setSize("{parent.width - 4}", 4)
   overlay:addButton():setText("Re-arm"):setPosition(2, 9):setSize(12, 3)
     :onClick(function() requestRearm() end)
-  overlay:hide()
+  hideEl(overlay)
   ui.failsafe = { frame = overlay, reasonLabel = reasonLabel }
 end
 
@@ -1537,9 +1547,9 @@ local function refreshFailsafeOverlay()
   if not f then return end
   if craft.state == "FAILSAFE" then
     f.reasonLabel:setText("Reason: " .. tostring(craft.failsafeReason))
-    f.frame:show()
+    showEl(f.frame)
   else
-    f.frame:hide()
+    hideEl(f.frame)
   end
 end
 
@@ -1551,18 +1561,18 @@ end
 -- implementations wired to its widgets, for use with runCalibrationFlow().
 local function buildCalibrationModal(parent)
   local modal = parent:addFrame()
-    :setPosition(1, 1):setSize("parent.w", "parent.h")
+    :setPosition(1, 1):setSize("{parent.width}", "{parent.height}")
     :setBackground(colors.black)
-  modal:hide()
+  hideEl(modal)
 
   local title = modal:addLabel():setText("Calibration"):setPosition(2, 2)
-  local statusLabel = modal:addLabel():setText(""):setPosition(2, 4):setSize("parent.w - 4", 3)
+  local statusLabel = modal:addLabel():setText(""):setPosition(2, 4):setSize("{parent.width - 4}", 3)
 
-  local reviewFrame = modal:addFrame():setPosition(2, 8):setSize("parent.w - 4", "parent.h - 10")
-  reviewFrame:hide()
+  local reviewFrame = modal:addFrame():setPosition(2, 8):setSize("{parent.width - 4}", "{parent.height - 10}")
+  hideEl(reviewFrame)
 
   local function close()
-    modal:hide()
+    hideEl(modal)
   end
 
   local callbacks = {
@@ -1577,13 +1587,13 @@ local function buildCalibrationModal(parent)
         :setPosition(2, 10):setSize(14, 3)
         :onClick(function() os.queueEvent("bumper_answer", true) end)
       os.pullEvent("bumper_answer")
-      fireBtn:remove()
+      fireBtn:destroy()
     end,
     reviewMapping = function(thrusterMapping, gimbals, autoAccept)
-      reviewFrame:show()
+      showEl(reviewFrame)
       -- Clear any widgets left over from a previous review pass (e.g. the
       -- automatic->manual gimbal fallback re-enters this screen).
-      for _, c in ipairs(reviewFrame:getChildren() or {}) do c:remove() end
+      for _, c in ipairs(reviewFrame:getChildren() or {}) do c:destroy() end
       local lines = { "Thruster mapping:" }
       for _, corner in ipairs(CORNERS) do
         table.insert(lines, ("  %s -> %s"):format(corner, thrusterMapping[corner].name))
@@ -1600,9 +1610,9 @@ local function buildCalibrationModal(parent)
         :setPosition(1, #lines + 2):setSize(#acceptLabel + 2, 3)
         :onClick(function() os.queueEvent("bumper_answer", true) end)
       os.pullEvent("bumper_answer")
-      btn:remove()
-      reviewLabel:remove()
-      reviewFrame:hide()
+      btn:destroy()
+      reviewLabel:destroy()
+      hideEl(reviewFrame)
       -- Prototype note: manual per-field override editing is not wired up
       -- in this single-file prototype; operators who need to override a
       -- flagged relay can re-run calibration with corrected wiring/naming.
@@ -1611,9 +1621,9 @@ local function buildCalibrationModal(parent)
   }
 
   local function runFlow(mode)
-    modal:show()
+    showEl(modal)
     statusLabel:setText("Starting " .. mode .. " calibration...")
-    basalt.thread(function()
+    basalt.schedule(function()
       local calibration, ok, err = runCalibrationFlow(mode, callbacks)
       if ok then
         craft.calibration = calibration
@@ -1637,7 +1647,7 @@ local function buildCalibrationModal(parent)
   ui.calibration = { frame = modal, statusLabel = statusLabel }
 
   openCalibrationModal = function()
-    modal:show()
+    showEl(modal)
     statusLabel:setText("Choose calibration type (Automatic recommended):")
   end
 
@@ -1651,16 +1661,16 @@ end
 local function buildUI()
   main = basalt.getMainFrame()
 
-  local tabs = main:addFrame():setPosition(1, 1):setSize("parent.w", 1)
-  tabHome = main:addFrame():setPosition(1, 2):setSize("parent.w", "parent.h - 1")
-  tabSettings = main:addFrame():setPosition(1, 2):setSize("parent.w", "parent.h - 1")
-  tabInfo = main:addFrame():setPosition(1, 2):setSize("parent.w", "parent.h - 1")
-  tabSettings:hide()
-  tabInfo:hide()
+  local tabs = main:addFrame():setPosition(1, 1):setSize("{parent.width}", 1)
+  tabHome = main:addFrame():setPosition(1, 2):setSize("{parent.width}", "{parent.height - 1}")
+  tabSettings = main:addFrame():setPosition(1, 2):setSize("{parent.width}", "{parent.height - 1}")
+  tabInfo = main:addFrame():setPosition(1, 2):setSize("{parent.width}", "{parent.height - 1}")
+  hideEl(tabSettings)
+  hideEl(tabInfo)
 
   local function showTab(which)
-    tabHome:hide(); tabSettings:hide(); tabInfo:hide()
-    which:show()
+    hideEl(tabHome); hideEl(tabSettings); hideEl(tabInfo)
+    showEl(which)
   end
 
   tabs:addButton():setText("Home"):setPosition(1, 1):setSize(8, 1)
@@ -1679,7 +1689,7 @@ local function buildUI()
   -- Mirror to a connected monitor if present, adapting to its size.
   local monitor = peripheral.find("monitor")
   if monitor then
-    local monFrame = basalt.createFrame():setTerm(monitor)
+    local monFrame = basalt.createFrame(monitor)
     monFrame:addLabel():setText("BumperOS mirrored -- see computer for controls")
       :setPosition(2, 2)
   end
