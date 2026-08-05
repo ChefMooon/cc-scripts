@@ -79,7 +79,7 @@ local SILENT_TICKS             = 40    -- silent-gimbal failsafe threshold (cons
 local STALE_TICKS              = 40    -- stale-gimbal failsafe threshold (no fresh read)
 local WATCHDOG_TIMEOUT_TICKS   = 60    -- watchdog timeout, comfortably above the control period
 local NOISE_FLOOR_FRACTION     = 0.15  -- validation noise floor, as a fraction of expected magnitude
-local IMPULSE_TICKS            = 10    -- calibration test-fire impulse duration
+local IMPULSE_TICKS            = 20    -- calibration test-fire impulse duration
 local INTEGRAL_MAX             = 50    -- PID anti-windup clamp (signal units * seconds)
 local CONTROL_PERIOD           = 0.1   -- seconds per control cycle ("tick")
 local DERIV_FILTER_ALPHA       = 0.3   -- low-pass filter coefficient for D-on-measurement
@@ -87,8 +87,10 @@ local DERIV_FILTER_ALPHA       = 0.3   -- low-pass filter coefficient for D-on-m
 -- Signal reached during a calibration thrust pulse (0 = max thrust).
 -- Calibration runs on the ground, so a pulse ramps from MAX_SIGNAL (no
 -- thrust) down to this value to briefly lift a corner, then back to
--- MAX_SIGNAL. Tune per-vehicle.
-local CALIBRATION_PULSE_SIGNAL = 5
+-- MAX_SIGNAL. Must be strong enough to visibly move a corner during
+-- pulse-and-watch mapping (a weak pulse reads as "nothing moved").
+-- Tune per-vehicle.
+local CALIBRATION_PULSE_SIGNAL = 2
 
 -- Default persisted settings (used if settings.cfg is missing on first boot)
 local DEFAULT_SETTINGS = {
@@ -964,7 +966,10 @@ local function mapThrusters(allRelays, callbacks)
     local usedCorners = {}
 
     for _, relayInfo in ipairs(allRelays) do
-      local firePulse = function() pulseThrust(relayInfo) end
+      local firePulse = function()
+        callbacks.notify(("Pulsing relay %s -- WATCH the corners..."):format(relayInfo.name))
+        pulseThrust(relayInfo)
+      end
       firePulse()
       local result = callbacks.askPulseResult(relayInfo, firePulse)
       if result == "none" then

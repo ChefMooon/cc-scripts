@@ -453,6 +453,6 @@ Consolidated list of all named constants, grouped by whether they are user-facin
 | `STALE_TICKS` | stale-gimbal threshold (no fresh read) | TBD |
 | `WATCHDOG_TIMEOUT_TICKS` | watchdog timeout | TBD |
 | `NOISE_FLOOR_FRACTION` | validation noise floor as a fraction of expected magnitude | 0.15 |
-| `IMPULSE_TICKS` | calibration thrust-pulse hold duration (the `N` ticks) | TBD |
-| `CALIBRATION_PULSE_SIGNAL` | signal reached during a calibration thrust pulse (0 = max thrust) | 5 |
+| `IMPULSE_TICKS` | calibration thrust-pulse hold duration (the `N` ticks) | 20 |
+| `CALIBRATION_PULSE_SIGNAL` | signal reached during a calibration thrust pulse (0 = max thrust); strong enough to visibly move a corner | 2 |
 | `THRUSTER_SIDES` | sides written on every thruster relay (covers any relay orientation) | all six (top/bottom/front/back/left/right) |
