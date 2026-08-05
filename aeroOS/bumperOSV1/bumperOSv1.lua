@@ -28,12 +28,13 @@
       mirroring the CC: Tweaked `redstone` API but namespaced per-peripheral.
       Gimbal relays are lock-on calibrated per side because it is unknown in
       advance which of a relay's faces carries the live signal; thruster
-      relays use a single fixed side (DEFAULT_THRUSTER_SIDE) since they are
-      wired point-to-point to one thruster.
-    - Relay *role* (thruster vs. gimbal) is read from the peripheral's network
-      name (expected to contain "thruster" or "gimbal", e.g. "thruster_1",
-      "gimbal_1"), matching the naming used in the design doc's example
-      tables. Corner/side/axis/sign within a role is solved by calibration.
+      relays are written on ALL four horizontal sides (front/back/left/right)
+      because the live output face is unknown -- the wired face receives the
+      signal and the other faces are harmless.
+    - Relay *role* (thruster vs. gimbal) is NOT derived from names. It is
+      determined during calibration by pulse-and-watch: each relay is pulsed
+      and the operator reports which corner moved (a thruster) or that nothing
+      moved (a gimbal). Corner/axis/sign within a role is solved by calibration.
     - The exact Basalt 2.5 widget API (addButton/addSlider/addLabel/etc. with
       a fluent :set*()/:on*() chain) is based on the published Basalt guides;
       minor method-name differences may need adjusting for the exact version
@@ -64,8 +65,10 @@ local AXES    = { "pitch", "roll" }
 -- Relay sides we probe when lock-on calibrating a gimbal relay's live face.
 local SIDE_CANDIDATES = { "top", "bottom", "left", "right", "front", "back" }
 
--- ASSUMPTION: thruster relays are wired point-to-point on a single fixed side.
-local DEFAULT_THRUSTER_SIDE = "back"
+-- Horizontal sides written on every thruster relay. Since the live output
+-- face is unknown, the same signal is written to all four horizontal sides;
+-- the wired face receives it and the other faces are harmless.
+local THRUSTER_SIDES = { "front", "back", "left", "right" }
 
 -- Code-only constants (never user-facing; see README "Constants" table)
 local THRUST_BUFFER            = 3     -- reserves differential headroom at low thrust
@@ -80,10 +83,11 @@ local INTEGRAL_MAX             = 50    -- PID anti-windup clamp (signal units * 
 local CONTROL_PERIOD           = 0.1   -- seconds per control cycle ("tick")
 local DERIV_FILTER_ALPHA       = 0.3   -- low-pass filter coefficient for D-on-measurement
 
--- Code default for the baseline common-mode signal used to hold the craft
--- airborne (or approximately weightless-feeling) during calibration test
--- fires, so tilt impulses aren't blocked by the ground. Tune per-vehicle.
-local CALIBRATION_BASE_SIGNAL  = 7
+-- Signal reached during a calibration thrust pulse (0 = max thrust).
+-- Calibration runs on the ground, so a pulse ramps from MAX_SIGNAL (no
+-- thrust) down to this value to briefly lift a corner, then back to
+-- MAX_SIGNAL. Tune per-vehicle.
+local CALIBRATION_PULSE_SIGNAL = 5
 
 -- Default persisted settings (used if settings.cfg is missing on first boot)
 local DEFAULT_SETTINGS = {
@@ -221,7 +225,7 @@ local function validateCalibration(cfg)
   if type(cfg.thrusters) ~= "table" then return false, "missing thrusters" end
   for _, corner in ipairs(CORNERS) do
     local t = cfg.thrusters[corner]
-    if type(t) ~= "table" or type(t.name) ~= "string" or type(t.side) ~= "string" then
+    if type(t) ~= "table" or type(t.name) ~= "string" then
       return false, "invalid thruster mapping for " .. corner
     end
   end
@@ -314,23 +318,6 @@ local function discoverRelays()
   return found
 end
 
--- Splits discovered relays into thruster / gimbal / unknown by name pattern.
--- See file header ASSUMPTION note on naming.
-local function classifyRelays(found)
-  local thrusters, gimbals, unknown = {}, {}, {}
-  for _, r in ipairs(found) do
-    local lname = r.name:lower()
-    if lname:find("thruster") then
-      table.insert(thrusters, r)
-    elseif lname:find("gimbal") then
-      table.insert(gimbals, r)
-    else
-      table.insert(unknown, r)
-    end
-  end
-  return thrusters, gimbals, unknown
-end
-
 local function relaySetOutput(relayObj, side, value)
   relayObj.setAnalogOutput(side, clamp(round(value), MIN_SIGNAL, MAX_SIGNAL))
 end
@@ -342,12 +329,15 @@ local function relayGetInput(relayObj, side)
 end
 
 -- Sets a thruster corner's raw output signal directly via the resolved
--- calibration mapping. Used by both the control loop and calibration.
+-- calibration mapping. Writes to all four horizontal sides since the live
+-- output face is unknown. Used by both the control loop and calibration.
 local function setCornerSignal(calibration, corner, value)
   local t = calibration.thrusters[corner]
   local relay = Relays[t.name]
   if not relay then return false end
-  relaySetOutput(relay.obj, t.side, value)
+  for _, side in ipairs(THRUSTER_SIDES) do
+    relaySetOutput(relay.obj, side, value)
+  end
   return true
 end
 
@@ -852,22 +842,22 @@ end
 -- both the Automatic and Manual flows, which differ only in how tilt
 -- impulses are triggered and how much the operator must confirm.
 --
--- Expected corner -> (pitch, roll) contribution when a corner's thrust is
--- CUT (see README "Sign conventions" / correction table, derived from craft
--- geometry): cutting a corner sinks it, so:
---   FL cut -> nose-down-ish (pitch-) and left-down-ish (roll+)
---   FR cut -> nose-down-ish (pitch-) and right-down-ish (roll-)
---   BL cut -> nose-up-ish   (pitch+) and left-down-ish (roll+)
---   BR cut -> nose-up-ish   (pitch+) and right-down-ish (roll-)
+-- Expected corner -> (pitch, roll) contribution when a corner is THRUST (see
+-- README "Sign conventions" / correction table, derived from craft geometry):
+-- thrusting a corner lifts it, so:
+--   FL thrust -> nose-up-ish   (pitch+) and left-up-ish   (roll-)
+--   FR thrust -> nose-up-ish   (pitch+) and right-up-ish  (roll+)
+--   BL thrust -> nose-down-ish (pitch-) and left-up-ish   (roll-)
+--   BR thrust -> nose-down-ish (pitch-) and right-up-ish  (roll+)
 -- This gives each of the 4 unsigned gimbal-relay "roles" (front/back/left/
 -- right) a clean expected activation pattern across the 4 corner fires,
 -- which is what the gimbal role-matching step below correlates against.
 
 local GIMBAL_ROLES = {
-  { axis = "pitch", sign =  1, label = "front", activatesOn = { FL = false, FR = false, BL = true,  BR = true  } },
-  { axis = "pitch", sign = -1, label = "back",  activatesOn = { FL = true,  FR = true,  BL = false, BR = false } },
-  { axis = "roll",  sign =  1, label = "left",  activatesOn = { FL = true,  FR = false, BL = true,  BR = false } },
-  { axis = "roll",  sign = -1, label = "right", activatesOn = { FL = false, FR = true,  BL = false, BR = true  } },
+  { axis = "pitch", sign =  1, label = "front", activatesOn = { FL = true,  FR = true,  BL = false, BR = false } },
+  { axis = "pitch", sign = -1, label = "back",  activatesOn = { FL = false, FR = false, BL = true,  BR = true  } },
+  { axis = "roll",  sign =  1, label = "left",  activatesOn = { FL = false, FR = true,  BL = false, BR = true  } },
+  { axis = "roll",  sign = -1, label = "right", activatesOn = { FL = true,  FR = false, BL = true,  BR = false } },
 }
 
 -- ---- calibration session control (open-loop, failsafe suspended) ----------
@@ -883,30 +873,60 @@ local function calibrationExit()
   craft.failsafeSuspended = false
 end
 
--- ---- Thruster Test-Fire (shared primitive) ---------------------------------
+-- ---- Thruster Pulse (shared primitive) -------------------------------------
 
--- Applies (or restores) a thruster's raw output directly, bypassing
+-- Applies a thruster's raw output directly on all horizontal sides, bypassing
 -- calibration.thrusters (used before the mapping exists yet).
 local function rawThrusterSet(relayInfo, value)
-  relaySetOutput(relayInfo.obj, DEFAULT_THRUSTER_SIDE, value)
+  for _, side in ipairs(THRUSTER_SIDES) do
+    relaySetOutput(relayInfo.obj, side, value)
+  end
 end
 
--- Fires a bounded impulse on a single thruster relay: cuts it to MAX_SIGNAL
--- (no thrust) for `ticks` cycles from a CALIBRATION_BASE_SIGNAL baseline.
--- NOTE: this does NOT restore the baseline -- the caller restores it via
--- restoreBaseline() after sampling the response while the corner is still cut.
-local function testFireRelay(relayInfo, ticks)
+-- Ramp a single thruster relay's signal from MAX_SIGNAL (no thrust) down to
+-- `target` gradually, then hold. Calibration runs on the ground, so a pulse
+-- is a short, gradual thrust that briefly lifts a corner.
+local function rampThrustDown(relayInfo, target)
+  for s = MAX_SIGNAL - 1, target, -1 do
+    rawThrusterSet(relayInfo, s)
+    sleepTicks(1)
+  end
+  rawThrusterSet(relayInfo, target)
+end
+
+-- Ramp a single thruster relay's signal back up to MAX_SIGNAL (no thrust).
+local function rampThrustUp(relayInfo)
+  for s = CALIBRATION_PULSE_SIGNAL + 1, MAX_SIGNAL do
+    rawThrusterSet(relayInfo, s)
+    sleepTicks(1)
+  end
   rawThrusterSet(relayInfo, MAX_SIGNAL)
-  sleepTicks(ticks)
 end
 
+-- Full ground-based pulse: ramp down to thrust, hold, ramp back to no thrust.
+local function pulseThrust(relayInfo)
+  rampThrustDown(relayInfo, CALIBRATION_PULSE_SIGNAL)
+  sleepTicks(IMPULSE_TICKS)
+  rampThrustUp(relayInfo)
+end
+
+-- Fire AND HOLD: ramp down to thrust and hold (does NOT restore). The caller
+-- samples the peak response while the corner is still thrusting, then
+-- restores via restoreBaseline().
+local function fireAndHoldThrust(relayInfo)
+  rampThrustDown(relayInfo, CALIBRATION_PULSE_SIGNAL)
+  sleepTicks(IMPULSE_TICKS)
+end
+
+-- Restore a relay to no thrust (MAX_SIGNAL) after a fire-and-hold.
 local function restoreBaseline(relayInfo)
-  rawThrusterSet(relayInfo, CALIBRATION_BASE_SIGNAL)
+  rawThrusterSet(relayInfo, MAX_SIGNAL)
 end
 
--- ---- Step 1: enumerate + classify + count-validate -------------------------
+-- ---- Step 1: enumerate + count-validate ------------------------------------
 
--- Returns (thrusterRelays, gimbalRelays) or (nil, nil, errString).
+-- Returns (allRelays) or (nil, nil, errString). Role assignment (thruster vs
+-- gimbal) is done by the operator via pulse-and-watch, not by name.
 local function calibrationEnumerate()
   local found = discoverRelays()
   if #found ~= 8 then
@@ -917,38 +937,45 @@ local function calibrationEnumerate()
   end
   Relays = {}
   for _, r in ipairs(found) do Relays[r.name] = r end
-
-  local thrusters, gimbals, unknown = classifyRelays(found)
-  if #thrusters ~= 4 or #gimbals ~= 4 then
-    return nil, nil, ("relay naming ambiguous: %d matched 'thruster', %d matched 'gimbal', %d unrecognized -- rename peripherals to include 'thruster' or 'gimbal'")
-      :format(#thrusters, #gimbals, #unknown)
-  end
-  return thrusters, gimbals
+  return found
 end
 
--- ---- Step 2: thruster -> corner mapping (the human step, both flows) ------
+-- ---- Step 2: role + corner mapping (the human step, both flows) ------------
 
--- `askCorner` is a UI callback: askCorner(promptText) -> "FL"|"FR"|"BL"|"BR"
--- (blocks until the operator answers). Returns calibration.thrusters table.
-local function mapThrusters(thrusterRelays, askCorner)
-  local mapping = {}
-  local usedCorners = {}
-  for _, relayInfo in ipairs(thrusterRelays) do
-    rawThrusterSet(relayInfo, CALIBRATION_BASE_SIGNAL)
-  end
-  sleepTicks(IMPULSE_TICKS) -- let the craft settle at baseline first
+-- Combined role (thruster vs gimbal) and corner mapping. Pulses each of the 8
+-- relays on the ground and asks the operator which corner moved (a thruster)
+-- or whether nothing moved (a gimbal). Repeats the pass until an even
+-- 4-thruster / 4-gimbal split with 4 distinct corners is achieved.
+-- `askPulseResult` is a UI callback: askPulseResult(promptText) ->
+-- "FL"|"FR"|"BL"|"BR"|"none" (blocks until the operator answers).
+-- Returns (thrusterMapping, gimbalRelays).
+local function mapThrusters(allRelays, askPulseResult, notify)
+  while true do
+    local mapping = {}
+    local gimbalRelays = {}
+    local usedCorners = {}
 
-  for _, relayInfo in ipairs(thrusterRelays) do
-    testFireRelay(relayInfo, IMPULSE_TICKS)
-    local corner = askCorner(("Which thruster just changed? (relay: %s)"):format(relayInfo.name))
-    restoreBaseline(relayInfo)
-    while usedCorners[corner] do
-      corner = askCorner(("Corner %s was already assigned -- pick a different corner for %s"):format(corner, relayInfo.name))
+    for _, relayInfo in ipairs(allRelays) do
+      pulseThrust(relayInfo)
+      local result = askPulseResult(("Which corner moved? (relay: %s)"):format(relayInfo.name))
+      if result == "none" then
+        table.insert(gimbalRelays, relayInfo)
+      else
+        while usedCorners[result] do
+          result = askPulseResult(("Corner %s was already assigned -- pick a different corner or None for %s"):format(result, relayInfo.name))
+        end
+        usedCorners[result] = true
+        mapping[result] = { name = relayInfo.name }
+      end
     end
-    usedCorners[corner] = true
-    mapping[corner] = { name = relayInfo.name, side = DEFAULT_THRUSTER_SIDE }
+
+    local thrusterCount = 0
+    for _ in pairs(mapping) do thrusterCount = thrusterCount + 1 end
+    if thrusterCount == 4 and #gimbalRelays == 4 then
+      return mapping, gimbalRelays
+    end
+    notify(("Split was %d thrusters / %d gimbals -- repeating the pass."):format(thrusterCount, #gimbalRelays))
   end
-  return mapping
 end
 
 -- ---- Step 3: Gimbal Mapper (shared; tiltSource differs by flow) -----------
@@ -1125,8 +1152,8 @@ local function runGimbalMapper(gimbalRelays, thrusterMapping, tiltSource, thrust
   -- Flag negligible or sign-inverted axes against the expected table (see
   -- README "Sign conventions" table) for automatic->manual fallback.
   local EXPECTED_SIGNS = {
-    FL = { pitch = -1, roll =  1 }, FR = { pitch = -1, roll = -1 },
-    BL = { pitch =  1, roll =  1 }, BR = { pitch =  1, roll = -1 },
+    FL = { pitch =  1, roll = -1 }, FR = { pitch =  1, roll =  1 },
+    BL = { pitch = -1, roll = -1 }, BR = { pitch = -1, roll =  1 },
   }
   for _, corner in ipairs(CORNERS) do
     local c = coupling[corner]
@@ -1152,7 +1179,7 @@ end
 local function makeAutoTiltSource(thrusterRelaysByName)
   return function(corner, thrusterMapping)
     local relayInfo = thrusterRelaysByName[thrusterMapping[corner].name]
-    testFireRelay(relayInfo, IMPULSE_TICKS)
+    fireAndHoldThrust(relayInfo)
   end
 end
 
@@ -1164,7 +1191,7 @@ local function makeManualTiltSource(thrusterRelaysByName, waitForFire)
   return function(corner, thrusterMapping)
     waitForFire(corner)
     local relayInfo = thrusterRelaysByName[thrusterMapping[corner].name]
-    testFireRelay(relayInfo, IMPULSE_TICKS)
+    fireAndHoldThrust(relayInfo)
   end
 end
 
@@ -1175,9 +1202,8 @@ end
 local function validatePairFire(thrusterRelaysByName, thrusterMapping, calibration)
   local function fireCorners(corners)
     for _, c in ipairs(corners) do
-      rawThrusterSet(thrusterRelaysByName[thrusterMapping[c].name], MAX_SIGNAL)
+      fireAndHoldThrust(thrusterRelaysByName[thrusterMapping[c].name])
     end
-    sleepTicks(IMPULSE_TICKS)
     local pitch, roll = readAxisErrors(calibration)
     for _, c in ipairs(corners) do
       restoreBaseline(thrusterRelaysByName[thrusterMapping[c].name])
@@ -1200,11 +1226,12 @@ local function validatePairFire(thrusterRelaysByName, thrusterMapping, calibrati
   if math.abs(leftRoll - rightRoll) < noiseFloorRoll then
     return false, "pair-fire: left/right roll authority below noise floor"
   end
-  -- front-pair cut should read pitch- relative to back-pair cut (pitch+)
-  if not (frontPitch < backPitch) then
+  -- front-pair thrust should read pitch+ relative to back-pair thrust (pitch-)
+  if not (frontPitch > backPitch) then
     return false, "pair-fire: pitch sign check failed"
   end
-  if not (leftRoll > rightRoll) then
+  -- left-pair thrust should read roll- relative to right-pair thrust (roll+)
+  if not (leftRoll < rightRoll) then
     return false, "pair-fire: roll sign check failed"
   end
   return true
@@ -1219,13 +1246,10 @@ local function validateContactCheck(thrusterRelaysByName, thrusterMapping)
     if peripheral.getType(relayInfo.name) ~= "redstone_relay" then
       return false, "thruster relay for " .. corner .. " is not responding"
     end
-    -- Pulse the relay to exercise it (cut to no-thrust briefly, then restore
-    -- the baseline). A stuck-off corner is recoverable; a stuck-on corner
-    -- cannot be detected purely in software -- flagged for operator visual
-    -- check (see README "Startup contact-check").
-    rawThrusterSet(relayInfo, MAX_SIGNAL)
-    sleepTicks(1)
-    restoreBaseline(relayInfo)
+    -- Pulse the relay to exercise it (brief thrust pulse). A stuck-off corner
+    -- is recoverable; a stuck-on corner cannot be detected purely in software
+    -- -- flagged for operator visual check (see README "Startup contact-check").
+    pulseThrust(relayInfo)
   end
   return true
 end
@@ -1248,7 +1272,7 @@ end
 -- ---- Top-level calibration orchestration (used by both flows) ------------
 
 -- callbacks = {
---   askCorner(promptText) -> "FL"|"FR"|"BL"|"BR"                 (both flows)
+--   askPulseResult(promptText) -> "FL"|"FR"|"BL"|"BR"|"none"     (both flows)
 --   waitForFire(corner)                                          (manual only)
 --   reviewMapping(thrusterMapping, gimbals, autoAccept) -> finalThrusterMapping, finalGimbals
 --   notify(text) / warn(text)
@@ -1258,14 +1282,14 @@ local function runCalibrationFlow(mode, callbacks)
   calibrationEnter()
 
   local ok, result = pcall(function()
-    local thrusterRelays, gimbalRelays, enumErr = calibrationEnumerate()
-    if not thrusterRelays then error(enumErr, 0) end
+    local allRelays, enumErr = calibrationEnumerate()
+    if not allRelays then error(enumErr, 0) end
 
     local thrusterRelaysByName = {}
-    for _, r in ipairs(thrusterRelays) do thrusterRelaysByName[r.name] = r end
+    for _, r in ipairs(allRelays) do thrusterRelaysByName[r.name] = r end
 
-    callbacks.notify("Mapping thrusters...")
-    local thrusterMapping = mapThrusters(thrusterRelays, callbacks.askCorner)
+    callbacks.notify("Mapping thrusters & gimbals (pulse-and-watch)...")
+    local thrusterMapping, gimbalRelays = mapThrusters(allRelays, callbacks.askPulseResult, callbacks.notify)
 
     local tiltSource
     if mode == "auto" then
@@ -1385,11 +1409,12 @@ local function askButtons(parent, y, options)
   return value
 end
 
-local function askCornerUI(parent, statusLabel, promptText)
+local function askPulseResultUI(parent, statusLabel, promptText)
   statusLabel:setText(promptText)
   return askButtons(parent, 10, {
     { label = "FL", value = "FL" }, { label = "FR", value = "FR" },
     { label = "BL", value = "BL" }, { label = "BR", value = "BR" },
+    { label = "None", value = "none" },
   })
 end
 
@@ -1524,7 +1549,7 @@ local function refreshInfo()
     table.insert(lines, "Thrusters:")
     for _, corner in ipairs(CORNERS) do
       local t = craft.calibration.thrusters[corner]
-      table.insert(lines, ("  %s -> %s [%s]"):format(corner, t.name, t.side))
+      table.insert(lines, ("  %s -> %s"):format(corner, t.name))
     end
     table.insert(lines, "Gimbals:")
     for name, g in pairs(craft.calibration.gimbals) do
@@ -1588,8 +1613,8 @@ local function buildCalibrationModal(parent)
   local callbacks = {
     notify = function(text) statusLabel:setText(text) end,
     warn = function(text) statusLabel:setText("[!] " .. text) end,
-    askCorner = function(promptText)
-      return askCornerUI(modal, statusLabel, promptText)
+    askPulseResult = function(promptText)
+      return askPulseResultUI(modal, statusLabel, promptText)
     end,
     waitForFire = function(corner)
       statusLabel:setText(("Select %s and press Fire"):format(corner))
