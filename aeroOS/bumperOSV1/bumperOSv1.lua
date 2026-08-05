@@ -1659,11 +1659,8 @@ local function buildCalibrationModal(parent)
     end,
     reviewMapping = function(thrusterMapping, gimbals, autoAccept)
       showEl(reviewFrame)
-      -- The Auto/Manual chooser buttons are covered by the review panel;
-      -- hide them so they can't be clicked or peek through, and restore
-      -- them when the review closes (including any failure path).
-      hideEl(autoBtn)
-      hideEl(manualBtn)
+      -- The Auto/Manual chooser buttons were destroyed when the user picked
+      -- a mode, so they can't linger on screen and cover this review.
 
       -- Clear any widgets left over from a previous review pass (e.g. the
       -- automatic->manual gimbal fallback re-enters this screen).
@@ -1703,8 +1700,6 @@ local function buildCalibrationModal(parent)
       btn:destroy()
       reviewLabel:destroy()
       hideEl(reviewFrame)
-      showEl(autoBtn)
-      showEl(manualBtn)
       -- Prototype note: manual per-field override editing is not wired up
       -- in this single-file prototype; operators who need to override a
       -- flagged relay can re-run calibration with corrected wiring/naming.
@@ -1725,25 +1720,41 @@ local function buildCalibrationModal(parent)
         statusLabel:setText("Calibration FAILED: " .. tostring(err))
       end
       sleepTicks(20)
-      -- Restore the Auto/Manual chooser (they are hidden during a review)
-      -- in case the review path never re-showed them.
-      showEl(autoBtn)
-      showEl(manualBtn)
       close()
     end)
   end
 
-  local autoBtn = modal:addButton():setText("Automatic (default)")
-    :setPosition(2, 16):setSize(22, 3)
-    :onClick(function() runFlow("auto") end)
-  local manualBtn = modal:addButton():setText("Manual")
-    :setPosition(26, 16):setSize(14, 3)
-    :onClick(function() runFlow("manual") end)
+  -- The Auto/Manual chooser buttons are DESTROYED once the user picks a
+  -- mode so they can never linger on screen and cover the mapping review
+  -- (Basalt draws later-added widgets on top, so hiding alone is unreliable).
+  -- They are recreated each time the calibration modal is reopened.
+  local autoBtn, manualBtn
+  local function buildChooserButtons()
+    autoBtn = modal:addButton():setText("Automatic (default)")
+      :setPosition(2, 16):setSize(22, 3)
+      :onClick(function()
+        if autoBtn then autoBtn:destroy() end
+        if manualBtn then manualBtn:destroy() end
+        autoBtn, manualBtn = nil, nil
+        runFlow("auto")
+      end)
+    manualBtn = modal:addButton():setText("Manual")
+      :setPosition(26, 16):setSize(14, 3)
+      :onClick(function()
+        if autoBtn then autoBtn:destroy() end
+        if manualBtn then manualBtn:destroy() end
+        autoBtn, manualBtn = nil, nil
+        runFlow("manual")
+      end)
+  end
+  buildChooserButtons()
 
   ui.calibration = { frame = modal, statusLabel = statusLabel }
 
   openCalibrationModal = function()
     showEl(modal)
+    -- Recreate the chooser buttons if they were destroyed by a previous run.
+    if not autoBtn then buildChooserButtons() end
     statusLabel:setText("Choose calibration type (Automatic recommended):")
   end
 
