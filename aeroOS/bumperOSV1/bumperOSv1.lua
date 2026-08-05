@@ -1297,7 +1297,7 @@ local function runCalibrationFlow(mode, callbacks)
   calibrationEnter()
 
   local ok, result = pcall(function()
-    local allRelays, enumErr = calibrationEnumerate()
+    local allRelays, _, enumErr = calibrationEnumerate()
     if not allRelays then error(enumErr, 0) end
 
     local thrusterRelaysByName = {}
