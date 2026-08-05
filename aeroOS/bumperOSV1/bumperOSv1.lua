@@ -46,7 +46,7 @@
 --============================================================================
 
 local BUMPER_OS_VERSION = "1.0.0"
-local CALIBRATION_SCHEMA_VERSION = 1
+local CALIBRATION_SCHEMA_VERSION = 2
 local SETTINGS_SCHEMA_VERSION = 1
 
 -- File paths
@@ -84,13 +84,25 @@ local INTEGRAL_MAX             = 50    -- PID anti-windup clamp (signal units * 
 local CONTROL_PERIOD           = 0.1   -- seconds per control cycle ("tick")
 local DERIV_FILTER_ALPHA       = 0.3   -- low-pass filter coefficient for D-on-measurement
 
+-- Per-axis correction direction override. Calibration (schema v2) now
+-- measures and stores each gimbal relay's actual physical response sign
+-- (see section 10), so the correct correction direction is encoded in
+-- calibration.cfg at calibration time and these default to +1 (identity).
+-- They remain a MANUAL OVERRIDE ONLY -- set an axis to -1 here only to
+-- reverse it without re-calibrating. An inverted axis would otherwise be
+-- positive feedback: nose-up gets front-BOOST instead of front-cut, and the
+-- craft noses up / limit-cycles. Diagnose a suspected inversion: while stuck
+-- off-level, the Home screen shows the high side's corners BOOSTED, not cut.
+local PITCH_CORRECTION_SIGN = 1
+local ROLL_CORRECTION_SIGN  = 1
+
 -- Signal reached during a calibration thrust pulse (0 = max thrust).
 -- Calibration runs on the ground, so a pulse ramps from MAX_SIGNAL (no
 -- thrust) down to this value to briefly lift a corner, then back to
 -- MAX_SIGNAL. Must be strong enough to visibly move a corner during
 -- pulse-and-watch mapping (a weak pulse reads as "nothing moved").
 -- Tune per-vehicle.
-local CALIBRATION_PULSE_SIGNAL = 2
+local CALIBRATION_PULSE_SIGNAL = 8
 
 -- Default persisted settings (used if settings.cfg is missing on first boot)
 local DEFAULT_SETTINGS = {
@@ -450,9 +462,13 @@ end
 -- right corners. The axial-mode matrices below encode that directly:
 --   pitch mode: FL:+1 FR:+1 BL:-1 BR:-1   (front corners cut for +pitch_cmd)
 --   roll  mode: FL:-1 FR:+1 BL:-1 BR:+1   (right corners cut for +roll_cmd)
--- ASSUMPTION/TUNING NOTE: if the PID's sign convention doesn't match the
--- physical wiring once tested, flip the corresponding axis's Kp sign in
--- Settings rather than editing this matrix.
+-- ASSUMPTION/TUNING NOTE: the correction direction is normally resolved by
+-- calibration, which now measures each gimbal relay's actual physical
+-- response sign (see section 10) -- no manual sign fix is expected. If a
+-- specific axis still behaves inverted, flip that axis's *_CORRECTION_SIGN
+-- in section 1 (it inverts the whole axis -- Kp, Ki and Kd together).
+-- Flipping only Kp in Settings is NOT sufficient when the error sign itself
+-- is inverted, because the integral and derivative terms then wind the wrong way.
 
 local PITCH_AXIAL_SIGN = { FL = 1, FR = 1, BL = -1, BR = -1 }
 local ROLL_AXIAL_SIGN  = { FL = -1, FR = 1, BL = -1, BR = 1 }
@@ -712,6 +728,13 @@ local function applyPIDCorrectedThrust(commonMode, dt)
   end
   local pitchCmd = pidUpdate(craft.pidPitch, pitchErr, dt)
   local rollCmd  = pidUpdate(craft.pidRoll, rollErr, dt)
+  -- Apply the per-axis correction sign (see PITCH_CORRECTION_SIGN /
+  -- ROLL_CORRECTION_SIGN in section 1). Negating the command is equivalent
+  -- to negating the error, so it inverts Kp, Ki and Kd together -- the correct
+  -- fix when a gimbal axis reads with an inverted sign (flipping only Kp in
+  -- Settings would leave the integral/derivative winding the wrong way).
+  pitchCmd = pitchCmd * PITCH_CORRECTION_SIGN
+  rollCmd  = rollCmd  * ROLL_CORRECTION_SIGN
   craft.lastCommanded.pitch = pitchCmd
   craft.lastCommanded.roll = rollCmd
   local diffs = computeDifferentials(craft.calibration, pitchCmd, rollCmd)
@@ -857,6 +880,10 @@ end
 -- This gives each of the 4 unsigned gimbal-relay "roles" (front/back/left/
 -- right) a clean expected activation pattern across the 4 corner fires,
 -- which is what the gimbal role-matching step below correlates against.
+-- NOTE: role matching correlates response MAGNITUDES only; each relay's
+-- physical response SIGN (rise vs. fall when its face is lifted) is measured
+-- separately and folded into its stored sign, so an inverted sensor is
+-- auto-corrected at calibration time (see the physSign step in the mapper).
 
 local GIMBAL_ROLES = {
   { axis = "pitch", sign =  1, label = "front", activatesOn = { FL = true,  FR = true,  BL = false, BR = false } },
@@ -1000,9 +1027,12 @@ end
 
 -- Side lock-on: for each gimbal relay, find which of its candidate sides
 -- actually carries a live signal by looking for the side with the greatest
--- total deviation across all sampled impulses.
+-- total |deviation| across all sampled impulses.
 local function lockOnGimbalSides(gimbalRelays, samples)
   -- samples: { [relayName] = { [side] = { corner1=v, corner2=v, ... }, ... } }
+  -- Values are SIGNED deviations (peak - baseline); score on magnitude so a
+  -- relay whose response is inverted (its raw signal falls when its face is
+  -- lifted) still locks onto the correct live side.
   local locked = {}
   for _, relayInfo in ipairs(gimbalRelays) do
     local bestSide, bestScore = nil, -1
@@ -1010,7 +1040,7 @@ local function lockOnGimbalSides(gimbalRelays, samples)
       local perCorner = samples[relayInfo.name] and samples[relayInfo.name][side]
       if perCorner then
         local score = 0
-        for _, v in pairs(perCorner) do score = score + v end
+        for _, v in pairs(perCorner) do score = score + math.abs(v) end
         if score > bestScore then
           bestScore, bestSide = score, side
         end
@@ -1035,7 +1065,9 @@ local function matchGimbalRoles(gimbalRelays, lockedSides, responses)
     for i, role in ipairs(GIMBAL_ROLES) do
       local score = 0
       for _, corner in ipairs(CORNERS) do
-        local measured = r[corner] or 0
+        -- Correlate response MAGNITUDES: a relay may respond by rising OR
+        -- falling; its physical response sign is resolved after matching.
+        local measured = math.abs(r[corner] or 0)
         if role.activatesOn[corner] then
           score = score + measured      -- reward expected activation
         else
@@ -1081,8 +1113,8 @@ end
 -- corner is still cut, then restores it via thrusterRelaysByName.
 -- Returns (gimbals, coupling, expected, ok, err)
 local function runGimbalMapper(gimbalRelays, thrusterMapping, tiltSource, thrusterRelaysByName)
-  local rawSamples = {}     -- [relayName][side][corner] = deviation from baseline
-  local lockedResponses = {} -- [relayName][corner] = signed-ready raw value (post lock-on)
+  local rawSamples = {}     -- [relayName][side][corner] = SIGNED deviation from baseline
+  local lockedResponses = {} -- [relayName][corner] = signed deviation on the locked side
 
   for _, relayInfo in ipairs(gimbalRelays) do
     rawSamples[relayInfo.name] = {}
@@ -1120,7 +1152,10 @@ local function runGimbalMapper(gimbalRelays, thrusterMapping, tiltSource, thrust
 
     for _, relayInfo in ipairs(gimbalRelays) do
       for _, side in ipairs(SIDE_CANDIDATES) do
-        local delta = math.abs(peak[relayInfo.name][side] - baseline[relayInfo.name][side])
+        -- SIGNED deviation (peak - baseline), not absolute: the sign records
+        -- the relay's physical response direction, which lets calibration
+        -- auto-correct an inverted sensor (see the physSign step below).
+        local delta = peak[relayInfo.name][side] - baseline[relayInfo.name][side]
         rawSamples[relayInfo.name][side][corner] = delta
       end
     end
@@ -1142,11 +1177,31 @@ local function runGimbalMapper(gimbalRelays, thrusterMapping, tiltSource, thrust
     return nil, nil, nil, false, err
   end
 
+  -- Resolve each relay's actual physical response sign. Role matching above
+  -- only correlates response MAGNITUDES, so it cannot tell whether a relay
+  -- rises (convention: 0 = no error, 15 = max error) or falls when its face
+  -- is lifted. physSign records that direction: +1 if it rises, -1 if it
+  -- falls, taken as the sign of the summed signed responses on its role's
+  -- activating corners. The stored sign is the role's convention sign times
+  -- physSign, so readAxisErrors() yields the correct signed error even when
+  -- the sensor is mounted/wired with an inverted response -- no manual
+  -- correction constant is needed.
+  local physSign = {}
+  for name, role in pairs(roles) do
+    local sum = 0
+    for _, corner in ipairs(CORNERS) do
+      if role.activatesOn[corner] then
+        sum = sum + lockedResponses[name][corner]
+      end
+    end
+    physSign[name] = (sum >= 0) and 1 or -1
+  end
+
   -- Build gimbals mapping and, from it, signed per-corner pitch/roll
   -- responses (the coupling matrix) and expected peak magnitudes.
   local gimbals = {}
   for name, role in pairs(roles) do
-    gimbals[name] = { side = locked[name], axis = role.axis, sign = role.sign }
+    gimbals[name] = { side = locked[name], axis = role.axis, sign = role.sign * physSign[name] }
   end
 
   local coupling = {}
@@ -1155,16 +1210,21 @@ local function runGimbalMapper(gimbalRelays, thrusterMapping, tiltSource, thrust
     local pitch, roll = 0, 0
     for name, role in pairs(roles) do
       local v = lockedResponses[name][corner]
-      if role.axis == "pitch" then pitch = pitch + role.sign * v
-      else roll = roll + role.sign * v end
+      local s = gimbals[name].sign
+      if role.axis == "pitch" then pitch = pitch + s * v
+      else roll = roll + s * v end
     end
     coupling[corner] = { pitch = pitch, roll = roll }
     expectedPitch = math.max(expectedPitch, math.abs(pitch))
     expectedRoll = math.max(expectedRoll, math.abs(roll))
   end
 
-  -- Flag negligible or sign-inverted axes against the expected table (see
-  -- README "Sign conventions" table) for automatic->manual fallback.
+  -- With physSign applied, coupling signs are in the physical convention
+  -- frame regardless of the sensor's response direction, so this cross-check
+  -- only fires on a genuine fault (a thruster physically wired/mounted to
+  -- push the wrong way), not on a merely-inverted sensor. A negligible
+  -- response still flags an unreliable corner for re-run / manual fallback
+  -- (see README "Sign conventions" table).
   local EXPECTED_SIGNS = {
     FL = { pitch =  1, roll = -1 }, FR = { pitch =  1, roll =  1 },
     BL = { pitch = -1, roll = -1 }, BR = { pitch = -1, roll =  1 },

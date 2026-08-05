@@ -59,6 +59,8 @@ The 4 gimbal relays provide **raw 0–15 signals** (`0` = no error, `15` = max e
 
 With the finalized conventions (positive pitch = nose-up, positive roll = left-down), the resolved signs are `sign_f = +1`, `sign_b = −1`, `sign_l = +1`, `sign_r = −1`, so `pitch_error = front − back` and `roll_error = left − right`. At level, both relays on an axis read `0`, so the error is `0`. The PID works directly in these signal units (no degree conversion); gains are tuned in these units.
 
+The stored per-relay signs are **measured, not assumed** (schema v2): calibration records each relay's physical response direction and multiplies the convention sign by it (see "Sign conventions" → "Gimbal response sign"), so an inverted sensor is corrected automatically.
+
 ### PID form
 
 Position form, error in signal units, output in differential signal units:
@@ -102,7 +104,9 @@ Scale `a`/`b` using the measured gains from calibration so each mode's real-worl
 | pitch | nose-up | front | FL, FR | + |
 | roll | left-down | right | FR, BR | + |
 
-**Derived from calibration (Option B):** this table is **documentation + validation only**, not a runtime lookup. The runtime uses the signed coupling matrix solved during calibration directly — it already encodes which corner does what and with what sign. The table documents the *expected* behavior so validation can cross-check that a relay isn't inverted (a relay whose measured sign disagrees with this table is flagged).
+**Gimbal response sign (measured, schema v2):** the gimbal relays provide raw **magnitudes** (`0` = no error, `15` = max error). When the craft tilts, a relay's raw value changes — but it can either *rise* or *fall* depending on the sensor's mounting/wiring. Calibration therefore measures each relay's **physical response direction** (rise vs. fall on its activating corners) and stores the **true sign** = convention sign × measured response direction. `readAxisErrors()` uses the stored signs, so the signed errors come out correct even when a sensor is mounted/wired inverted — **no manual `Kp`/sign flip is needed**. The signs shown in the table above (`sign_f = +1`, `sign_b = −1`, `sign_l = +1`, `sign_r = −1`) are the convention for a correctly-behaving sensor; a stored per-relay sign may differ if a sensor responds inverted.
+
+**Derived from calibration (Option B):** this table is **documentation + validation only**, not a runtime lookup. The runtime uses the signed coupling matrix solved during calibration directly — it already encodes which corner does what and with what sign. Because calibration measures each gimbal relay's actual response sign, an *inverted sensor* is auto-corrected and satisfies this table automatically; the table now only flags a **genuine fault** — a thruster that physically pushes the wrong way (its measured coupling sign disagrees) — which is reported for re-run/manual fallback rather than silently accepted.
 
 ### Saturation & enforcement
 
@@ -277,9 +281,9 @@ Two files persist state, both serialized with `textutils.serialize` (CC: Tweaked
 
 Stores the relay mapping and solved coupling data. Contents:
 
-- `version` — schema version (validated on load).
+- `version` — schema version (validated on load). Schema **v2**: `gimbals[*].sign` now stores the **measured true sign**; v1 calibrations are rejected on load and must be re-run.
 - `thrusters` — relay name → corner (FL/FR/BL/BR). No side is stored: thrusters are written on all six sides.
-- `gimbals` — relay name → { side, axis, sign } (the resolved listening side per relay).
+- `gimbals` — relay name → { side, axis, sign }. `sign` is the **measured true sign** (convention sign × the relay's measured physical response direction), so the signed error is correct even for an inverted sensor.
 - `coupling` — the solved coupling matrix (each corner → pitch gain, roll gain).
 - `expected` — measured peak response per axis (pitch, roll), used to seed the validation noise floor.
 
@@ -348,9 +352,9 @@ Both flows build on the same two primitives, so automatic and manual stay on one
 - **Role & Corner Mapping** (the human step, both flows): first prompts the operator to **turn the engine on**, then pulses each of the 8 relays on the ground and asks "which corner moved?" (FL/FR/BL/BR) or "None" (a gimbal). A relay that moves a corner is a thruster and is assigned that corner; a relay that moves nothing is a gimbal. The operator can **re-pulse** any relay before answering (e.g. if they missed the movement). The pass repeats until an even 4-thruster / 4-gimbal split with 4 distinct corners is achieved.
 - **Gimbal Mapper** (shared routine): maps all gimbal relays from a series of tilt impulses. It takes a **tilt source** — the only thing that differs between flows — and runs the same steps:
   1. **Input side lock-on**: build the candidate side list from every side whose peripheral type is `redstone_relay` (include Up/Down as well as horizontal, so future design changes don't break calibration). As the tilts run, read `redstone.getAnalogInput(side)` on every candidate side; whichever side's signal changes is that relay's listening side. This side is stored, so runtime reads are always on the known side — no re-scanning.
-  2. **Sample per corner**: for each corner (FL/FR/BL/BR), apply a bounded thrust impulse for N ticks and record the peak signed pitch/roll response from the gimbal sensor. Because each corner thruster sits on two axes, every fire produces a **coupled** (pitch, roll) response.
-  3. **Solve**: least squares builds a **coupling matrix** — each corner maps to a (pitch gain, roll gain) pair. 4 corner fires × (pitch, roll) = 8 measurements → 8 unknowns, fully determined. The solver derives the gains and verifies signs.
-  4. If an axis yields a negligible or inverted response, flag it for re-run or manual fallback rather than silently accepting it.
+  2. **Sample per corner**: for each corner (FL/FR/BL/BR), apply a bounded thrust impulse for N ticks and record the peak **signed** pitch/roll response from the gimbal sensor (peak − baseline, sign kept). Because each corner thruster sits on two axes, every fire produces a **coupled** (pitch, roll) response.
+  3. **Solve**: least squares builds a **coupling matrix** — each corner maps to a (pitch gain, roll gain) pair. 4 corner fires × (pitch, roll) = 8 measurements → 8 unknowns, fully determined. Role matching correlates response **magnitudes**; then each relay's actual **physical response sign** (rise vs. fall) is measured and folded into its stored sign, so an inverted sensor is auto-corrected and the coupling signs land in the convention frame.
+  4. If an axis yields a negligible response — or, after auto-correction, a coupling sign that still disagrees with the expected table (a genuine thruster fault) — flag it for re-run or manual fallback rather than silently accepting it.
   5. **Automatic→manual gimbal fallback**: if the automatic gimbal solve flags a negligible/inverted axis, re-run the **entire Gimbal Mapper** in manual mode (button-driven tilt source) rather than re-running the whole flow or partially re-sampling. A suspect axis means the coupling matrix as a whole is unreliable, so re-solve from a fresh manual pass.
 - **Mapping Review** (shared confirmation screen): shows the full mapping as two tables — one for the thruster→corner mapping, one for the gimbal relay mapping. Both flows end with this screen; only the interaction mode differs:
   - **Manual** — **confirm**: the user must review and confirm the assignments before saving.
@@ -381,7 +385,7 @@ Thrusters are calibrated first, then the gimbal relays are mapped automatically 
 2. **Role & corner mapping** (the only human step): for each of the 8 relays, pulse it on the ground and ask the user "which corner moved?" (FL/FR/BL/BR) or "None" (a gimbal) via keybound options. Confirm the corner for all 4 thrusters; the 4 gimbals are the relays that moved nothing. The pass repeats until an even 4/4 split with 4 distinct corners is achieved.
 3. **Gimbal auto-calibration** (no user input): run the shared **Gimbal Mapper** with an **automatic tilt source** — the program fires each corner's impulse in sequence via the Thruster Pulse primitive, with no user input. Disable PID and run the craft open-loop so it cannot counteract the test impulses.
 4. **Mapping review** (auto-accepted): show the shared **Mapping Review** tables pre-filled with the solved mapping. Auto-accept unless the user edits to override a flagged relay.
-5. Save the resulting name→role mapping to `calibration.cfg` (including sign convention, the resolved listening side per gimbal relay, and a schema `version`), so it only runs once per build.
+- Save the resulting name→role mapping to `calibration.cfg` (including each gimbal relay's **measured true sign** and resolved listening side, plus a schema `version`), so it only runs once per build.
 
 ### Manual Flow
 For when you already know the layout or the automatic flow fails. This is the automatic flow with each tilt impulse triggered manually via the **Thruster Pulse** button instead of fired on a script — the two flows share one code path with a single input-mode switch, so the output format/`version` is identical.
@@ -400,7 +404,7 @@ Both flows end with a common validation pass to confirm the mapping before contr
 
 - **Startup contact-check**: pulse each thruster and confirm it responds, so a dead/stuck relay is detected (a stuck-off corner is recoverable; a stuck-on corner is not).
 - **Expected response magnitude**: store the measured peak response per axis (pitch, roll) in `calibration.cfg`. Seed the validation noise floor and confirmed-signed checks from it as a **fraction of the stored magnitude** — recommend **15%** (a response must exceed 15% of the expected magnitude to count as real). Per-axis, since pitch and roll authority can differ on a rectangular craft. Make it a tunable constant (`NOISE_FLOOR_FRACTION`).
-- **Confirmed-signed response**: for each gimbal axis, verify a nonzero, correctly-signed response above a noise floor. Re-prompt or warn if not verified.
+- **Confirmed-signed response**: for each gimbal axis, verify a nonzero, correctly-signed response above a noise floor. The correct sign is derived from each relay's **measured** physical response direction (see "Sign conventions"), so an inverted sensor passes automatically; only a genuine fault (a relay/thruster behaving opposite to its role) is flagged. Re-prompt or warn if not verified.
 - **Pair-fire validation**: after the coupling matrix is solved, fire thruster **pairs** to confirm clean single-axis tilts — FL+FR for pure pitch, FL+BL for pure roll. Verify the front-pair vs back-pair difference has pitch authority and the left-pair vs right-pair difference has roll authority, with correct signs. This confirms the solved coupling rather than trusting it blindly.
 - **Silent-input diagnosis**: if a candidate side (or locked-on side) never changes across all controlled tilts, don't assume a wiring fault immediately — retry with stronger/more tilts first, since a craft unable to tilt freely (e.g. resting on the ground) can produce a false "no response." If still silent, distinguish **relay absent** (`peripheral.getType(side)` no longer returns `redstone_relay`) from **relay present but silent** (gimbal-to-relay wiring, stuck sensor, or it is actually a thruster relay misidentified as input). Fail closed on that relay, report exactly which side/relay failed and what was tried, and offer: re-run calibration, drop to manual flow for that relay, or fix wiring and re-check. No "mark-and-continue-with-warning" — a silent input reads as constant 0 and the PID would correct against garbage and could slam thrust.
 - **Loss-of-signal check**: distinguish "relay present but 0 signal" from "relay disconnected"; on `peripheral.find` failure at runtime, fail closed (kill thrust). This shares the same fail-closed response as the silent-input diagnosis, so calibration and live operation respond identically.
