@@ -278,7 +278,7 @@ Two files persist state, both serialized with `textutils.serialize` (CC: Tweaked
 Stores the relay mapping and solved coupling data. Contents:
 
 - `version` — schema version (validated on load).
-- `thrusters` — relay name → corner (FL/FR/BL/BR). No side is stored: thrusters are written on all four horizontal sides.
+- `thrusters` — relay name → corner (FL/FR/BL/BR). No side is stored: thrusters are written on all six sides.
 - `gimbals` — relay name → { side, axis, sign } (the resolved listening side per relay).
 - `coupling` — the solved coupling matrix (each corner → pitch gain, roll gain).
 - `expected` — measured peak response per axis (pitch, roll), used to seed the validation noise floor.
@@ -344,8 +344,8 @@ Handles `calibration.cfg` creation, backup, and recovery so a botched calibratio
 ### Shared Calibration Primitives
 Both flows build on the same two primitives, so automatic and manual stay on one code path.
 
-- **Thruster Pulse** (the button): applies a short, gradual thrust pulse to a chosen thruster (corner) to create a tilt impulse. Calibration runs **on the ground**, so a pulse ramps the signal from `15` (no thrust) down to a thrust value (`CALIBRATION_PULSE_SIGNAL`), holds for ~N ticks, then ramps back to `15`. Because the live output face is unknown, the signal is written to **all four horizontal sides** of the relay (the wired face receives it; the others are harmless). This same primitive powers role/corner mapping, gimbal calibration, and the validation contact-check.
-- **Role & Corner Mapping** (the human step, both flows): pulses each of the 8 relays on the ground and asks the operator "which corner moved?" (FL/FR/BL/BR) or "None" (a gimbal). A relay that moves a corner is a thruster and is assigned that corner; a relay that moves nothing is a gimbal. The pass repeats until an even 4-thruster / 4-gimbal split with 4 distinct corners is achieved.
+- **Thruster Pulse** (the button): applies a short, gradual thrust pulse to a chosen thruster (corner) to create a tilt impulse. Calibration runs **on the ground**, so a pulse ramps the signal from `15` (no thrust) down to a thrust value (`CALIBRATION_PULSE_SIGNAL`), holds for ~N ticks, then ramps back to `15`. Because the live output face is unknown and each relay's faces are relative to its own orientation, the signal is written to **all six sides** of the relay (the wired face receives it; the others are harmless). This same primitive powers role/corner mapping, gimbal calibration, and the validation contact-check.
+- **Role & Corner Mapping** (the human step, both flows): first prompts the operator to **turn the engine on**, then pulses each of the 8 relays on the ground and asks "which corner moved?" (FL/FR/BL/BR) or "None" (a gimbal). A relay that moves a corner is a thruster and is assigned that corner; a relay that moves nothing is a gimbal. The operator can **re-pulse** any relay before answering (e.g. if they missed the movement). The pass repeats until an even 4-thruster / 4-gimbal split with 4 distinct corners is achieved.
 - **Gimbal Mapper** (shared routine): maps all gimbal relays from a series of tilt impulses. It takes a **tilt source** — the only thing that differs between flows — and runs the same steps:
   1. **Input side lock-on**: build the candidate side list from every side whose peripheral type is `redstone_relay` (include Up/Down as well as horizontal, so future design changes don't break calibration). As the tilts run, read `redstone.getAnalogInput(side)` on every candidate side; whichever side's signal changes is that relay's listening side. This side is stored, so runtime reads are always on the known side — no re-scanning.
   2. **Sample per corner**: for each corner (FL/FR/BL/BR), apply a bounded thrust impulse for N ticks and record the peak signed pitch/roll response from the gimbal sensor. Because each corner thruster sits on two axes, every fire produces a **coupled** (pitch, roll) response.
@@ -455,4 +455,4 @@ Consolidated list of all named constants, grouped by whether they are user-facin
 | `NOISE_FLOOR_FRACTION` | validation noise floor as a fraction of expected magnitude | 0.15 |
 | `IMPULSE_TICKS` | calibration thrust-pulse hold duration (the `N` ticks) | TBD |
 | `CALIBRATION_PULSE_SIGNAL` | signal reached during a calibration thrust pulse (0 = max thrust) | 5 |
-| `THRUSTER_SIDES` | horizontal sides written on every thruster relay | front/back/left/right |
+| `THRUSTER_SIDES` | sides written on every thruster relay (covers any relay orientation) | all six (top/bottom/front/back/left/right) |

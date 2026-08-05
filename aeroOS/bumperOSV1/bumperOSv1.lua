@@ -28,7 +28,7 @@
       mirroring the CC: Tweaked `redstone` API but namespaced per-peripheral.
       Gimbal relays are lock-on calibrated per side because it is unknown in
       advance which of a relay's faces carries the live signal; thruster
-      relays are written on ALL four horizontal sides (front/back/left/right)
+      relays are written on ALL six sides (top/bottom/front/back/left/right)
       because the live output face is unknown -- the wired face receives the
       signal and the other faces are harmless.
     - Relay *role* (thruster vs. gimbal) is NOT derived from names. It is
@@ -65,10 +65,11 @@ local AXES    = { "pitch", "roll" }
 -- Relay sides we probe when lock-on calibrating a gimbal relay's live face.
 local SIDE_CANDIDATES = { "top", "bottom", "left", "right", "front", "back" }
 
--- Horizontal sides written on every thruster relay. Since the live output
--- face is unknown, the same signal is written to all four horizontal sides;
--- the wired face receives it and the other faces are harmless.
-local THRUSTER_SIDES = { "front", "back", "left", "right" }
+-- Sides written on every thruster relay. Since the live output face is
+-- unknown and each relay's faces are relative to its own block orientation,
+-- the same signal is written to all six sides so whichever face is wired
+-- receives it regardless of relay rotation; unwired faces are harmless.
+local THRUSTER_SIDES = { "top", "bottom", "left", "right", "front", "back" }
 
 -- Code-only constants (never user-facing; see README "Constants" table)
 local THRUST_BUFFER            = 3     -- reserves differential headroom at low thrust
@@ -319,7 +320,9 @@ local function discoverRelays()
 end
 
 local function relaySetOutput(relayObj, side, value)
-  relayObj.setAnalogOutput(side, clamp(round(value), MIN_SIGNAL, MAX_SIGNAL))
+  -- pcall: tolerate sides the relay doesn't support as outputs so a single
+  -- unsupported face can't abort the whole write loop.
+  return pcall(relayObj.setAnalogOutput, side, clamp(round(value), MIN_SIGNAL, MAX_SIGNAL))
 end
 
 local function relayGetInput(relayObj, side)
@@ -942,27 +945,33 @@ end
 
 -- ---- Step 2: role + corner mapping (the human step, both flows) ------------
 
--- Combined role (thruster vs gimbal) and corner mapping. Pulses each of the 8
--- relays on the ground and asks the operator which corner moved (a thruster)
--- or whether nothing moved (a gimbal). Repeats the pass until an even
--- 4-thruster / 4-gimbal split with 4 distinct corners is achieved.
--- `askPulseResult` is a UI callback: askPulseResult(promptText) ->
--- "FL"|"FR"|"BL"|"BR"|"none" (blocks until the operator answers).
+-- Combined role (thruster vs gimbal) and corner mapping. First prompts the
+-- operator to turn the engine on, then pulses each of the 8 relays on the
+-- ground and asks which corner moved (a thruster) or whether nothing moved
+-- (a gimbal). The operator can re-pulse any relay before answering. Repeats
+-- the pass until an even 4-thruster / 4-gimbal split with 4 distinct corners
+-- is achieved.
+-- callbacks: { waitForEngine(), askPulseResult(relayInfo, firePulse) ->
+--             "FL"|"FR"|"BL"|"BR"|"none", notify(text) }
 -- Returns (thrusterMapping, gimbalRelays).
-local function mapThrusters(allRelays, askPulseResult, notify)
+local function mapThrusters(allRelays, callbacks)
+  callbacks.notify("Turn the engine ON, then continue.")
+  callbacks.waitForEngine()
+
   while true do
     local mapping = {}
     local gimbalRelays = {}
     local usedCorners = {}
 
     for _, relayInfo in ipairs(allRelays) do
-      pulseThrust(relayInfo)
-      local result = askPulseResult(("Which corner moved? (relay: %s)"):format(relayInfo.name))
+      local firePulse = function() pulseThrust(relayInfo) end
+      firePulse()
+      local result = callbacks.askPulseResult(relayInfo, firePulse)
       if result == "none" then
         table.insert(gimbalRelays, relayInfo)
       else
         while usedCorners[result] do
-          result = askPulseResult(("Corner %s was already assigned -- pick a different corner or None for %s"):format(result, relayInfo.name))
+          result = callbacks.askPulseResult(relayInfo, firePulse)
         end
         usedCorners[result] = true
         mapping[result] = { name = relayInfo.name }
@@ -974,7 +983,7 @@ local function mapThrusters(allRelays, askPulseResult, notify)
     if thrusterCount == 4 and #gimbalRelays == 4 then
       return mapping, gimbalRelays
     end
-    notify(("Split was %d thrusters / %d gimbals -- repeating the pass."):format(thrusterCount, #gimbalRelays))
+    callbacks.notify(("Split was %d thrusters / %d gimbals -- repeating the pass."):format(thrusterCount, #gimbalRelays))
   end
 end
 
@@ -1272,7 +1281,8 @@ end
 -- ---- Top-level calibration orchestration (used by both flows) ------------
 
 -- callbacks = {
---   askPulseResult(promptText) -> "FL"|"FR"|"BL"|"BR"|"none"     (both flows)
+--   waitForEngine()                                              (both flows)
+--   askPulseResult(relayInfo, firePulse) -> "FL"|"FR"|"BL"|"BR"|"none" (both flows)
 --   waitForFire(corner)                                          (manual only)
 --   reviewMapping(thrusterMapping, gimbals, autoAccept) -> finalThrusterMapping, finalGimbals
 --   notify(text) / warn(text)
@@ -1289,7 +1299,7 @@ local function runCalibrationFlow(mode, callbacks)
     for _, r in ipairs(allRelays) do thrusterRelaysByName[r.name] = r end
 
     callbacks.notify("Mapping thrusters & gimbals (pulse-and-watch)...")
-    local thrusterMapping, gimbalRelays = mapThrusters(allRelays, callbacks.askPulseResult, callbacks.notify)
+    local thrusterMapping, gimbalRelays = mapThrusters(allRelays, callbacks)
 
     local tiltSource
     if mode == "auto" then
@@ -1409,13 +1419,22 @@ local function askButtons(parent, y, options)
   return value
 end
 
-local function askPulseResultUI(parent, statusLabel, promptText)
-  statusLabel:setText(promptText)
-  return askButtons(parent, 10, {
-    { label = "FL", value = "FL" }, { label = "FR", value = "FR" },
-    { label = "BL", value = "BL" }, { label = "BR", value = "BR" },
-    { label = "None", value = "none" },
-  })
+local function askPulseResultUI(parent, statusLabel, relayInfo, firePulse)
+  while true do
+    statusLabel:setText(("Which corner moved? (relay: %s)"):format(relayInfo.name))
+    local answer = askButtons(parent, 10, {
+      { label = "FL", value = "FL" }, { label = "FR", value = "FR" },
+      { label = "BL", value = "BL" }, { label = "BR", value = "BR" },
+      { label = "None", value = "none" },
+      { label = "Re-pulse", value = "repulse" },
+    })
+    if answer == "repulse" then
+      statusLabel:setText("Pulsing again...")
+      firePulse()
+    else
+      return answer
+    end
+  end
 end
 
 --============================================================================
@@ -1613,8 +1632,12 @@ local function buildCalibrationModal(parent)
   local callbacks = {
     notify = function(text) statusLabel:setText(text) end,
     warn = function(text) statusLabel:setText("[!] " .. text) end,
-    askPulseResult = function(promptText)
-      return askPulseResultUI(modal, statusLabel, promptText)
+    waitForEngine = function()
+      statusLabel:setText("Turn the engine ON, then press Ready")
+      askButtons(modal, 10, { { label = "Ready", value = true } })
+    end,
+    askPulseResult = function(relayInfo, firePulse)
+      return askPulseResultUI(modal, statusLabel, relayInfo, firePulse)
     end,
     waitForFire = function(corner)
       statusLabel:setText(("Select %s and press Fire"):format(corner))
