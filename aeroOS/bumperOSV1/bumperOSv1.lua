@@ -1627,7 +1627,12 @@ local function buildCalibrationModal(parent)
   local title = modal:addLabel():setText("Calibration"):setPosition(2, 2)
   local statusLabel = modal:addLabel():setText(""):setPosition(2, 4):setSize("{parent.width - 4}", 3)
 
-  local reviewFrame = modal:addFrame():setPosition(2, 8):setSize("{parent.width - 4}", "{parent.height - 10}")
+  -- Review panel: solid background so the Auto/Manual chooser buttons
+  -- underneath stay covered while a mapping review is on screen.
+  local reviewFrame = modal:addFrame()
+    :setPosition(2, 6)
+    :setSize("{parent.width - 4}", "{parent.height - 5}")
+    :setBackground(colors.black)
   hideEl(reviewFrame)
 
   local function close()
@@ -1654,28 +1659,52 @@ local function buildCalibrationModal(parent)
     end,
     reviewMapping = function(thrusterMapping, gimbals, autoAccept)
       showEl(reviewFrame)
+      -- The Auto/Manual chooser buttons are covered by the review panel;
+      -- hide them so they can't be clicked or peek through, and restore
+      -- them when the review closes (including any failure path).
+      hideEl(autoBtn)
+      hideEl(manualBtn)
+
       -- Clear any widgets left over from a previous review pass (e.g. the
       -- automatic->manual gimbal fallback re-enters this screen).
-      for _, c in ipairs(reviewFrame:getChildren() or {}) do c:destroy() end
+      for _, c in ipairs(reviewFrame:getChildren() or {}) do
+        if c.destroy then c:destroy() end
+      end
+
+      -- Single-column summary; gimbal relays are sorted by name so the
+      -- review reads deterministically instead of a random pairs() order.
       local lines = { "Thruster mapping:" }
       for _, corner in ipairs(CORNERS) do
         table.insert(lines, ("  %s -> %s"):format(corner, thrusterMapping[corner].name))
       end
       table.insert(lines, "Gimbal mapping:")
-      for name, g in pairs(gimbals) do
+      local gimbalNames = {}
+      for name in pairs(gimbals) do table.insert(gimbalNames, name) end
+      table.sort(gimbalNames)
+      for _, name in ipairs(gimbalNames) do
+        local g = gimbals[name]
         table.insert(lines, ("  %s -> %s%s"):format(name, g.axis, g.sign > 0 and "+" or "-"))
       end
-      local reviewLabel = reviewFrame:addLabel():setText(table.concat(lines, "\n")):setPosition(1, 1)
+
+      -- Give the label an explicit size so the full multi-line text renders
+      -- (a default-sized label clips to a single character / first line).
+      local reviewLabel = reviewFrame:addLabel()
+        :setText(table.concat(lines, "\n"))
+        :setPosition(1, 1)
+        :setSize("{parent.width}", #lines)
 
       local acceptLabel = autoAccept and "Accept (auto-filled)" or "Confirm"
-      local proceed = false
       local btn = reviewFrame:addButton():setText(acceptLabel)
-        :setPosition(1, #lines + 2):setSize(#acceptLabel + 2, 3)
+        :setPosition(1, #lines + 2)
+        :setSize(#acceptLabel + 2, 3)
         :onClick(function() os.queueEvent("bumper_answer", true) end)
+
       os.pullEvent("bumper_answer")
       btn:destroy()
       reviewLabel:destroy()
       hideEl(reviewFrame)
+      showEl(autoBtn)
+      showEl(manualBtn)
       -- Prototype note: manual per-field override editing is not wired up
       -- in this single-file prototype; operators who need to override a
       -- flagged relay can re-run calibration with corrected wiring/naming.
@@ -1696,6 +1725,10 @@ local function buildCalibrationModal(parent)
         statusLabel:setText("Calibration FAILED: " .. tostring(err))
       end
       sleepTicks(20)
+      -- Restore the Auto/Manual chooser (they are hidden during a review)
+      -- in case the review path never re-showed them.
+      showEl(autoBtn)
+      showEl(manualBtn)
       close()
     end)
   end
